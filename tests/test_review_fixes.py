@@ -333,14 +333,14 @@ def s11_after_test_out(pg):
     r = pg.evaluate(r'''() => { const st = Store.get('k7'), c = counts('k7'); return {right:(st.ans.s01&&st.ans.s01.a&&st.ans.s01.a.right||[]).length, s01done:!!st.done.s01, counts:[c.total, c.skipped], listed: /Your reaction times/.test(document.querySelector('#app').textContent), collectGone: !document.querySelector('#collect')}; }''')
     ok('s11 after a test-out: the times are stored for s11, listed, and no session credit is given', ran == 'ok' and r['right'] == 8 and not r['s01done'] and r['counts'] == before and r['listed'] and r['collectGone'], [ran, r, before])
     q = pg.evaluate("findSession('k7','s11').session.check[0]")
-    ok('s11: the written question and rubric accept the log or the reaction times', 'each hand' in q['q'] and 'Log' in q['q'] and 'Either one passes' in q['rubric'], q['q'])
+    ok('s11: the written question and rubric accept the log or the reaction times', "each hand" in q['q'] and 'Log' in q['q'] and 'Accept either kind' in q['rubric'], q['q'])
 
 @check
 def s11_with_stored_times(pg):
     r = pg.evaluate(r'''() => { __T.placeAt('k7','s11'); Store.get('k7').ans.s01 = {a:{right:[250,260,270], left:[300,310,320], predict:'My right hand', mr:260, ml:310}}; Store.save('k7');
       startSession('k7','s11'); if(VIEW.stage==='warm'){ VIEW.stage='task'; render(); }
-      return {collect: !!document.querySelector('#collect'), listed: /Right: 250, 260, 270/.test(document.querySelector('#app').textContent)}; }''')
-    ok('s11 with stored reaction times: they are listed and no extra test is offered', not r['collect'] and r['listed'], r)
+      return {collect: !!document.querySelector('#collect'), listed: /Right: 250, 260, 270/.test(document.querySelector('#app').textContent), predict: /Your prediction before the test: My right hand/.test(document.querySelector('#app').textContent)}; }''')
+    ok('s11 with stored reaction times: they and the prediction are listed, and no extra test is offered', not r['collect'] and r['listed'] and r['predict'], r)
 
 @check
 def s11_tryout_saves_nothing(pg):

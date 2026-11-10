@@ -308,21 +308,21 @@ k7:{ wins:[{after:"s01", label:"Run an experiment on yourself and graph it"},{af
      ]},
    { id:"s11", title:"Your data, analyzed", mins:20, link:{t:"Open a blank CODAP document", u:CODAP_NEW}, show:{from:"s01.a", kind:"react"}, collect:{from:"s01.a"},
      steps:["Use your 7-day log if it has at least 5 days. If it does not, use your reaction times from session 1, listed below. If no times are listed, do the reaction-time test below first. Either kind of data works.",
-            "In CODAP, click Tables and choose New. Type in your column names and your rows.",
-            "Make a dot plot for each numeric column. Use Measure (the ruler), then Measures of Center, to show the median.",
+            "In CODAP, click Tables and choose New. Log: make the columns Day, Sleep (hours), Screens (minutes) and Moving (minutes). Reaction times: make the columns Right and Left (milliseconds), one try per row.",
+            "Make a dot plot for each measured column: Sleep, Screens and Moving, or Right and Left. Use Measure (the ruler), then Measures of Center, to show the median. The median is the middle value once the values are in order. With an even count, it is halfway between the middle two.",
             "Pick your most interesting graph. Take a screenshot of it now. You need it next session.",
-            "Compare with your prediction. Log: the median of one column against the typical value you predicted when you started the log. Reaction times: which hand had the lower median, and whether that is the hand you predicted."],
+            "Compare with your first prediction. Log: one column's median against the typical value you predicted when you started the log. Reaction times: the hand with the lower median was faster, and equal medians are a tie. If you cannot find your prediction, say so. Do not make one up now."],
      check:[
-      {id:"a", t:"txt", q:"Answer for the data you used. Log: name one column, the typical value you predicted, and the actual median, with units. Reaction times: give the median for each hand and say whether that matches your prediction.", rubric:"Accept either kind of data. Log: names one column, gives the predicted typical value and the actual median, with units (hours or minutes). Reaction times: gives a median for each hand in milliseconds and says whether the faster hand matches the prediction (right hand, left hand, or no real difference). Either one passes."},
-      {id:"b", t:"mc", q:"Your data covers a short time for one person. What can you conclude from it?", opts:["How all 7th graders would come out","What happened for you during the time you measured","Nothing at all"], a:1, why:"The data describes what it measured: you, that week."}
+      {id:"a", t:"txt", q:"Answer for the data you used. Log: name one column and give your first prediction and its median, both with units. Reaction times: give each hand's median in milliseconds, your first prediction, and whether it matched. If your prediction is missing, say so.", rubric:"Accept either kind of data. Log: names a column and gives the predicted typical value and the observed median, with hours or minutes. Reaction times: gives both hand medians in milliseconds, states the original prediction, and correctly says whether it matched; a lower time means faster, and equal medians are a tie. Accept a justified 'about the same' for close medians. On either route, accept a plain statement that the original prediction is missing instead of a comparison. Do not pass missing medians, missing units, or a conclusion that contradicts the student's own numbers."},
+      {id:"b", t:"mc", q:"A kid collects data about themself over a short time. What can that data tell them?", opts:["How all 7th graders would come out","What happened for that kid during the time they measured","Nothing at all"], a:1, why:"The data describes that one person during the time measured. It does not tell you about everyone."}
      ]},
    { id:"s12", title:"Write your data story", mins:20,
      steps:["Get the screenshot of your graph from last session. Make sure it has a title and a labeled axis. Add them by hand on a printout if you need to.",
-            "Write five sentences: the question you asked, how you collected the data, what the graph looks like, what you found (use the median and the range), and one limit of your data.",
+            "Write five sentences: your question, how you collected the data, what the graph looks like, your finding, and one limit of your data. In your finding, give the median and the range for the data in your graph, with units. The range is the biggest value minus the smallest. For reaction times, say which hand you mean.",
             "Paste your five sentences below.",
             "Show a parent the graph and the story together. They sign it off."],
      check:[
-      {id:"a", t:"txt", min:160, q:"Paste your five-sentence data story.", rubric:"Five parts: a question, how the data was collected, a description of the graph, a finding that gives both a median and a range, and one limit of the data."}
+      {id:"a", t:"txt", min:160, q:"Paste your five-sentence data story.", rubric:"Five parts: a question, how the data was collected, a description of the graph, a finding that gives both a median and a range with units, and one limit of the data. The median and range describe the same data as the graph. For reaction times, says which hand; reporting both hands separately is fine."}
      ]}
   ], gate:{ id:"g-s1b", title:"Gate 1B", n:10,
      product:{label:"One-page data story about your own data", rubric:["States a question","Says how the data was collected","Graph has a title and a labeled axis","Finding gives a median and a range that match the graph","Names one limit of the data"]},
@@ -1159,7 +1159,7 @@ function showBlock(kid, s){
   if(!s.show) return null;
   const parts = s.show.from.split("."), val = (Store.get(kid).ans[parts[0]]||{})[parts[1]];
   if(val && s.show.kind==="tally" && val.cats) return el("div", null, el("b", null, "The graph the page drew from your counts:"), figure({k:"bar", title:"What I counted", cats:val.cats, vals:val.vals}));
-  if(val && s.show.kind==="react" && val.right) return el("div", {class:"small"}, el("b", null, "Your reaction times from session 1, in milliseconds"), el("p", null, "Right: "+val.right.join(", ")), el("p", null, "Left: "+val.left.join(", ")));
+  if(val && s.show.kind==="react" && val.right) return el("div", {class:"small"}, el("b", null, "Your reaction times from session 1, in milliseconds"), el("p", null, "Right: "+val.right.join(", ")), el("p", null, "Left: "+val.left.join(", ")), val.predict ? el("p", null, "Your prediction before the test: "+val.predict+".") : null);
   return null;
 }
 // collect:{from:"sid.itemId"}: when the data a session builds on was never collected (a unit passed by test-out, say),
