@@ -12,7 +12,7 @@
   --bg:#f2f4ef; --grid:#e4e8df; --card:#ffffff; --ink:#172033; --muted:#566074; --line:#d5dbd0;
   --accent-s:#1b6a86; --tint-s:#e0eef3; --accent-m:#8a3a78; --tint-m:#f4e4f0;
   --accent:var(--accent-s); --tint:var(--tint-s); --on-accent:#ffffff;
-  --good:#2b7a4b; --good-bg:#e2f2e7; --warn:#a05f00; --warn-bg:#fbf0d9; --bad:#b0362e; --bad-bg:#f9e4e1;
+  --good:#2b7a4b; --good-bg:#e2f2e7; --warn:#8f5400; --warn-bg:#fbf0d9; --bad:#b0362e; --bad-bg:#f9e4e1;
   --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Lexend",Verdana,sans-serif;
 }
 @media (prefers-color-scheme: dark){
@@ -61,7 +61,7 @@ p{margin:0}
 .muted{color:var(--muted)}
 .small{font-size:14px}
 button.primary{background:var(--accent); color:var(--on-accent); border:0; border-radius:10px; padding:12px 18px; font:inherit; font-weight:700; cursor:pointer}
-button.primary[disabled]{opacity:.45; cursor:not-allowed}
+button.primary[disabled]{background:var(--line); color:var(--ink); opacity:.8; cursor:not-allowed}
 button.second{background:var(--tint); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font:inherit; cursor:pointer}
 a.link{display:inline-block; background:var(--tint); color:var(--ink); border:1px solid var(--accent); border-radius:10px; padding:10px 14px; font-weight:700; text-decoration:none}
 a.link::after{content:" ↗"}
@@ -123,7 +123,8 @@ td.num, th.num{text-align:right; font-variant-numeric:tabular-nums}
 .kpi{background:var(--tint); border-radius:10px; padding:10px 12px}
 .kpi b{display:block; font-family:var(--display); font-size:24px; font-variant-numeric:tabular-nums}
 .kpi span{font-size:13px; color:var(--muted)}
-.tally-grid{display:grid; grid-template-columns:1fr 120px; gap:8px; margin-top:10px; max-width:360px}
+.tally-grid input{min-width:0; width:100% !important}
+.tally-grid{display:grid; grid-template-columns:minmax(0,1fr) 110px; gap:8px; margin-top:10px; max-width:360px}
 .reactpad{display:block; width:100%; min-height:150px; border-radius:12px; border:2px solid var(--line); font:inherit; font-size:20px; font-weight:700; cursor:pointer; color:var(--ink); background:var(--tint)}
 .reactpad.go{background:var(--good); color:var(--on-accent); border-color:var(--good)}
 .chat{display:flex; flex-direction:column; gap:8px; margin-top:10px}
@@ -133,11 +134,23 @@ details summary{cursor:pointer; font-weight:700}
 @media (prefers-reduced-motion: no-preference){ .bar-inner{transition:width .4s} }
 .mcard{break-inside:avoid; page-break-inside:avoid}
 @media print{
+  :root{ --ink:#000 !important; --muted:#333 !important; --line:#888 !important; --card:#fff !important; --accent-s:#1b6a86 !important; --accent-m:#8a3a78 !important; --tint-s:#e0eef3 !important; --tint-m:#f4e4f0 !important }
   body{background:#fff !important; color:#000}
   header, #sync, .noprint{display:none !important}
   .card{box-shadow:none !important; border:1.5px solid #000 !important; background:#fff !important}
   .mcard{margin:0 0 12px}
   .shell, main{max-width:none !important}
+}
+::placeholder{color:var(--muted); opacity:.8}
+input[type=checkbox]{width:22px; height:22px; vertical-align:middle}
+details summary{min-height:44px; display:flex; align-items:center; cursor:pointer}
+.timer{flex:none}
+.reactpad, button{touch-action:manipulation}
+.reactpad{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+@media (max-width:520px){
+  nav button{padding:8px 10px; font-size:13px}
+  .brand small{display:none}
+  body.in-session #sync:not(.warn){display:none}
 }
 </style>
 </head>
@@ -157,6 +170,7 @@ const CODAP_MAMMALS = "https://codap.concord.org/app/static/dg/en/cert/index.htm
 const CODAP_NEW = "https://codap.concord.org/app/";
 const NYT_GRAPH = "https://www.nytimes.com/column/whats-going-on-in-this-graph";
 
+const MONTH_DOT = {k:"dot", title:"Days in each month", label:"Number of days", vals:[31,28,31,30,31,30,31,31,30,31,30,31]};
 const MONTH_DAYS = {k:"bar", title:"Days in each month", cats:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], vals:[31,28,31,30,31,30,31,31,30,31,30,31]};
 const CONTINENTS = {k:"bar", title:"Letters in each continent's name", cats:["Africa","Antarctica","Asia","Australia","Europe","N. America","S. America"], vals:[6,10,4,9,6,12,12]};
 
@@ -169,14 +183,14 @@ const TRACKS = {
 k7:{ wins:[{after:"s01", label:"Run an experiment on yourself and graph it"},{after:"s02", label:"Make a graph from a table of data"},{after:"s06", label:"Compare two groups with dot plots"},{after:"s08", label:"Find a median and a mean, and say which one to trust"},{after:"s12", label:"Tell a data story about your own week"}], phases:[
  { n:1, title:"See", when:"About 18 sessions", blurb:"Run a small experiment, read graphs, describe a distribution, and analyze a week of your own data.", units:[
   { id:"s1a", title:"Unit 1A: Reading data", sessions:[
-   { id:"s01", title:"Which hand is faster?", mins:12,
+   { id:"s01", title:"Which hand is faster?", mins:12, needs:"Any phone, tablet or computer.",
      steps:["Today you run an experiment on yourself. Question: is one of your hands faster than the other?",
             "Decide your prediction now, before you collect any data.",
-            "Go to the exit check. You will click a box the moment it turns green: 8 tries with your right hand, then 8 with your left.",
-            "The page graphs every click. Then you say what the data shows."],
+            "Next comes the experiment. You will tap or click a box the moment it turns green: 8 tries with your right hand, then 8 with your left.",
+            "The page graphs every try. Then you say what the data shows."],
      check:[
       {id:"a", t:"react", q:"Which hand is faster? Predict, then test it."},
-      {id:"b", t:"mc", q:"In the graph of your clicks, what does one dot stand for?", opts:["One click: one reaction time","One hand","One second","The average of all your clicks"], a:0, why:"Each dot is one measurement."},
+      {id:"b", t:"mc", q:"In a dot plot of reaction times, what does one dot stand for?", opts:["One try: one reaction time","One hand","One second","The average of all the tries"], a:0, why:"Each dot is one measurement."},
       {id:"c", t:"txt", q:"Was your prediction right? Then name one thing about how this test was run that could make it unfair.", rubric:"Says whether the prediction matched the result, and names one plausible limitation of the test, for example that the right hand always went first, there were only 8 tries, tiredness or practice, or the mouse or trackpad favoring one hand."}
      ]},
    { id:"s02", title:"Meet CODAP", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
@@ -186,7 +200,7 @@ k7:{ wins:[{after:"s01", label:"Run an experiment on yourself and graph it"},{af
             "Click the dot farthest to the right. Its row lights up in the table.",
             "Now click the axis name, Sleep (hours), and pick LifeSpan. The same 27 dots rearrange. Switch it back to Sleep."],
      check:[
-      {id:"a", t:"mc", q:"In the graph you made, what does one dot stand for?", opts:["One hour of sleep","One mammal","One kind of diet","The average of all the mammals"], a:1, why:"Each dot is one case: one row of the table."},
+      {id:"a", t:"mc", q:"In a CODAP graph of the Mammals table, what does one dot stand for?", opts:["One hour of sleep","One mammal","One kind of diet","The average of all the mammals"], a:1, why:"Each dot is one case: one row of the table."},
       {id:"b", t:"txt", q:"Which mammal sleeps the most, and about how many hours? Say how you found it.", rubric:"Names a specific mammal, gives a number of hours, and says how it was found, for example by clicking the dot or sorting the table."}
      ]},
    { id:"s03", title:"Start your own data", mins:10,
@@ -317,13 +331,13 @@ k4:{ wins:[{after:"m01", label:"Turn a pile of things into a bar graph"},{after:
  { n:1, title:"Notice", when:"About 18 sessions", blurb:"Count things, read graphs like a detective, and tell what your own data shows.", units:[
   { id:"m1a", title:"Unit 1A: Graph detective", sessions:[
    { id:"m01", title:"Guess, then count", mins:10,
-     steps:["Grab 12 small things that come in colors. LEGO bricks, crayons, beads or socks all work.",
+     steps:["Grab 12 small things that come in 2 to 6 colors. LEGO bricks, crayons, beads or socks all work.",
             "Before you count, guess. Which color is there the most of? Say your guess out loud.",
             "Sort them into piles by color. Count each pile.",
             "Now type your guess and your counts. Watch what the page draws."],
      check:[
       {id:"a", t:"tally", predict:true, q:"Type your guess. Then type each color and how many."},
-      {id:"b", t:"mc", q:"On your graph, what does the tallest bar show?", opts:["The color you had the most of","The color you like best","The biggest thing you counted"], a:0, why:"A taller bar means more things."}
+      {id:"b", t:"mc", q:"On a bar graph of things you counted, what does the tallest bar show?", opts:["The kind there is the most of","The kind you like best","The biggest thing that was counted"], a:0, why:"A taller bar means more things."}
      ]},
    { id:"m02", title:"Mystery graph", mins:8,
      steps:[{t:"Look at this mystery graph. Say two things you notice, out loud.", fig:Object.assign({},MONTH_DAYS,{hideCats:true,hideVals:true,hideTitle:true})},
@@ -331,8 +345,8 @@ k4:{ wins:[{after:"m01", label:"Turn a pile of things into a bar graph"},{after:
             {t:"Here is the whole graph. Were you right?", fig:MONTH_DAYS}],
      check:[
       {id:"a", t:"mc", q:"What does each bar show?", opts:["How many days are in one month","How many months are in a year","How hot each month is"], a:0, why:"Each bar is one month. Its height is the number of days.", fig:MONTH_DAYS},
-      {id:"b", t:"mc", q:"Which month has the shortest bar?", opts:["January","February","June"], a:1, why:"In most years February has 28 days."},
-      {id:"c", t:"num", q:"How many bars reach all the way up to 31?", a:7, why:"January, March, May, July, August, October and December."}
+      {id:"b", t:"mc", q:"Which month has the shortest bar?", fig:MONTH_DAYS, opts:["January","February","June"], a:1, why:"In most years February has 28 days."},
+      {id:"c", t:"num", q:"How many bars reach all the way up to 31?", fig:MONTH_DAYS, a:7, why:"January, March, May, July, August, October and December."}
      ]},
    { id:"m03", title:"Tally time", mins:10,
      steps:["Pick something new to count at home. You could count book colors on a shelf, or kinds of shoes by the door.",
@@ -406,8 +420,8 @@ k4:{ wins:[{after:"m01", label:"Turn a pile of things into a bar graph"},{after:
             "When months have the same number of days, their dots stack up."],
      check:[
       {id:"a", t:"num", q:"How many months have 30 days?", fig:{k:"dot", title:"Days in each month", label:"Number of days", vals:[31,28,31,30,31,30,31,31,30,31,30,31]}, a:4, why:"There are 4 dots above the 30."},
-      {id:"b", t:"num", q:"How many dots are on the whole plot?", a:12, why:"One dot for each of the 12 months."},
-      {id:"c", t:"mc", q:"Why is there nothing above the 29?", opts:["No month on this plot has 29 days","Someone forgot a dot","29 is not a real number"], a:0, why:"A gap means no month has that many days."}
+      {id:"b", t:"num", q:"How many dots are on the whole plot?", fig:MONTH_DOT, a:12, why:"One dot for each of the 12 months."},
+      {id:"c", t:"mc", q:"Why is there nothing above the 29?", fig:MONTH_DOT, opts:["No month on this plot has 29 days","Someone forgot a dot","29 is not a real number"], a:0, why:"A gap means no month has that many days."}
      ]},
    { id:"m10", title:"Middle and most", mins:10,
      steps:["Write these numbers on five scraps of paper: 4, 9, 2, 7, 5.",
@@ -489,6 +503,7 @@ for(const kk of Object.keys(KIDS)){
   Object.defineProperty(KIDS[kk], "named", {get(){ return !!((Store.get("parent").names||{})[kk]); }});
   Object.defineProperty(KIDS[kk], "name", {get(){ return (Store.get("parent").names||{})[kk] || KIDS[kk].dflt; }});
 }
+const TOUCH = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches), TAP = TOUCH ? "Tap" : "Click";
 function inClaude(){ return !!(window.claude && typeof window.claude.use==="function"); }
 
 /* ============================== GITHUB SYNC ==============================
@@ -525,7 +540,7 @@ const GH = {
 
 /* ============================== STORE ============================== */
 const Store = {
-  db:null, kind:"", err:null, tried:false, mode:"checking", localOk:true, data:{}, writing:{}, queued:{}, retry:{},
+  db:null, kind:"", err:null, tried:false, mode:"checking", localOk:true, data:{}, writing:{}, queued:{}, retry:{}, fail:{},
   blank(){ return {v:1, epoch:0, ts:0, done:{}, ans:{}, rev:{}, gates:{}, log:[], interests:[], stats:{fn:0, fok:0, rn:0, rok:0}}; },
   local(k){ try{ const s = localStorage.getItem("datalab:"+k); return s ? JSON.parse(s) : null; }catch(e){ return null; } },
   setLocal(k, v){ try{ localStorage.setItem("datalab:"+k, JSON.stringify(v)); return true; }catch(e){ return false; } },
@@ -560,7 +575,7 @@ const Store = {
     o.interests = [...new Set([...(a.interests||[]), ...(b.interests||[])])];
     for(const f of ["fn","fok","rn","rok"]) o.stats[f] = Math.max((a.stats||{})[f]||0, (b.stats||{})[f]||0);
     if(a.code || b.code) o.code = (a.ts||0) >= (b.ts||0) ? (a.code || b.code) : (b.code || a.code);
-    if(a.names || b.names){ const na = (a.ts||0) >= (b.ts||0); o.names = Object.assign({}, na ? b.names : a.names, na ? a.names : b.names); }
+    if(a.names || b.names){ const na = (a.ts||0) >= (b.ts||0); const nw = na ? a : b, od = na ? b : a; o.names = Object.assign({}, nw.names || od.names); }
     o.ts = Math.max(a.ts||0, b.ts||0);
     return o;
   },
@@ -571,13 +586,13 @@ const Store = {
     let cloud = null, ok = false;
     if(this.db){
       try{ const snap = await withTimeout(this.db.doc("state/"+k).get(), 10000); ok = true; this.err = null; if(snap && snap.exists){ cloud = JSON.parse(JSON.stringify(snap.data())); } }
-      catch(e){ ok = false; this.err = (e && e.status) || "net"; }
+      catch(e){ ok = false; this.err = (e && e.status) || "net"; this.fail[k] = true; }
     }
     const before = JSON.stringify(this.get(k));
     if(cloud) this.adopt(k, this.merge(this.get(k), cloud));
     this.localOk = this.setLocal(k, this.data[k]);
     if(ok && JSON.stringify(cloud) !== JSON.stringify(this.data[k]) && this.data[k].ts) this.push(k);
-    this.mode = (this.db && ok) ? "cloud" : (this.localOk ? "device" : "none");
+    this.mode = (this.db && ok && !Object.keys(this.fail).some(x=>x!==k)) ? "cloud" : (this.localOk ? "device" : "none");
     return before !== JSON.stringify(this.data[k]);
   },
   async push(k){
@@ -590,10 +605,10 @@ const Store = {
       if(snap && snap.exists) this.adopt(k, this.merge(this.get(k), JSON.parse(JSON.stringify(snap.data()))));
       this.localOk = this.setLocal(k, this.data[k]);
       await withTimeout(ref.set(JSON.parse(JSON.stringify(this.data[k]))), 10000);
-      this.mode = "cloud"; this.err = null; this.retry[k] = false;
+      delete this.fail[k]; this.retry[k] = false; if(Object.keys(this.fail).length){ this.mode = this.localOk ? "device" : "none"; } else { this.mode = "cloud"; this.err = null; }
     }catch(e){
       if(e && e.conflict && !this.retry[k]){ this.retry[k] = true; this.writing[k] = false; return this.push(k); }   // another device wrote in between: read, merge and write once more
-      this.retry[k] = false; this.err = (e && e.status) || "net"; this.mode = this.localOk ? "device" : "none";
+      this.retry[k] = false; this.fail[k] = true; this.err = (e && e.status) || "net"; this.mode = this.localOk ? "device" : "none";
     }
     this.writing[k] = false;
     renderSync();
@@ -640,22 +655,25 @@ const AI = { sample:null, tts:null,
 };
 
 /* ============================== FIGURES ============================== */
-function niceTop(max){ const step = max<=12 ? 2 : max<=40 ? 5 : 10; return {step, top: Math.ceil(max/step)*step}; }
+function FW(){ return (window.innerWidth || 999) < 560 ? 340 : 520; }   // phones get a narrower drawing so labels stay readable
+function niceTop(max){ max = Math.max(1, max||0); const step = max<=12 ? 2 : max<=40 ? 5 : max<=100 ? 10 : max<=250 ? 25 : 50; return {step, top: Math.ceil(max/step)*step}; }
 function barFig(f){
-  const W=520, H=230, L=40, R=12, T=(f.title && !f.hideTitle) ? 30 : 12, B=36;
+  const W=FW(), L=40, R=12, T=(f.title && !f.hideTitle) ? 30 : 12, n = f.vals.length, bw = (W-L-R)/n;
+  const stag = !f.hideCats && Math.max(...f.cats.map(c=>String(c).length))*6.6 > bw;   // long names alternate between two rows
+  const B = stag ? 50 : 36, H = 230 + (stag ? 14 : 0);
   const {step, top} = niceTop(Math.max(...f.vals));
-  const pw = W-L-R, ph = H-T-B, n = f.vals.length, bw = pw/n;
+  const pw = W-L-R, ph = H-T-B;
   const y = v => T + ph - (v/top)*ph;
   let s = '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" role="img" aria-label="'+esc(f.hideTitle ? "Bar graph" : (f.title||"Bar graph"))+'">';
   if(f.title && !f.hideTitle) s += '<text class="ttl" x="'+L+'" y="18">'+esc(f.title)+'</text>';
   for(let v=0; v<=top; v+=step){ s += '<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/>'; if(!f.hideVals) s += '<text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+v+'</text>'; }
-  f.vals.forEach((v,i)=>{ const x = L + i*bw + bw*0.15; s += '<rect class="mark" x="'+x.toFixed(1)+'" y="'+y(v).toFixed(1)+'" width="'+(bw*0.7).toFixed(1)+'" height="'+(T+ph-y(v)).toFixed(1)+'" rx="2"/>'; s += '<text x="'+(L+i*bw+bw/2).toFixed(1)+'" y="'+(H-B+16)+'" text-anchor="middle">'+esc(f.hideCats ? "?" : f.cats[i])+'</text>'; });
+  f.vals.forEach((v,i)=>{ const x = L + i*bw + bw*0.15; s += '<rect class="mark" x="'+x.toFixed(1)+'" y="'+y(v).toFixed(1)+'" width="'+(bw*0.7).toFixed(1)+'" height="'+(T+ph-y(v)).toFixed(1)+'" rx="2"/>'; s += '<text x="'+(L+i*bw+bw/2).toFixed(1)+'" y="'+(H-B+16+((stag && i%2) ? 14 : 0))+'" text-anchor="middle">'+esc(f.hideCats ? "?" : f.cats[i])+'</text>'; });
   s += '<line class="axis" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/><line class="axis" x1="'+L+'" x2="'+L+'" y1="'+T+'" y2="'+(T+ph)+'"/></svg>';
   return s;
 }
 function dotRows(rows, opts){
   const all = rows.flatMap(r=>r.vals), lo = Math.min(...all), hi = Math.max(...all);
-  const W=520, L=rows.some(r=>r.name) ? 70 : 24, R=24, T=opts.title ? 30 : 10, r=6, rowH = rows.map(row=>{ const c={}; let m=0; row.vals.forEach(v=>{ c[v]=(c[v]||0)+1; m=Math.max(m,c[v]); }); return m*(2*r+2)+14; });
+  const W=FW(), L=rows.some(r=>r.name) ? 70 : 24, R=24, T=opts.title ? 30 : 10, r=6, rowH = rows.map(row=>{ const c={}; let m=0; row.vals.forEach(v=>{ c[v]=(c[v]||0)+1; m=Math.max(m,c[v]); }); return m*(2*r+2)+14; });
   const H = T + rowH.reduce((a,b)=>a+b,0) + (opts.label ? 44 : 28);
   const x = v => L + (hi===lo ? 0.5 : (v-lo)/(hi-lo)) * (W-L-R);
   let s = '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" role="img" aria-label="'+esc(opts.title||"Dot plot")+'">';
@@ -669,7 +687,7 @@ function dotRows(rows, opts){
   return s + '</svg>';
 }
 function stripFig(f){
-  const all = [...f.a, ...f.b], step = 20, r = 5, W = 520, L = 70, R = 24;
+  const all = [...f.a, ...f.b], step = 20, r = 5, W = FW(), L = W<400 ? 46 : 70, R = W<400 ? 14 : 24;
   const lo = Math.floor(Math.min(...all)/100)*100, hi = Math.max(lo+100, Math.ceil(Math.max(...all)/100)*100);
   const x = v => L + (v-lo)/(hi-lo)*(W-L-R);
   const rows = [{name:f.la, vals:f.a},{name:f.lb, vals:f.b}];
@@ -807,13 +825,13 @@ function renderItem(kid, sid, item, done, opts){
     const rows = [];
     let guess = null;
     if(item.predict){ guess = el("input", {type:"text", id:"tg-"+sid, "aria-label":"My guess for the most", maxlength:"20", style:"width:160px"}); box.append(el("div", {class:"row", style:"margin-top:10px"}, el("label", {for:"tg-"+sid}, "My guess for the most:"), guess)); }
-    for(let i=0;i<6;i++){ const nm = el("input", {type:"text", id:"tk-"+sid+"-"+i, placeholder:"Kind "+(i+1), "aria-label":"Kind "+(i+1), maxlength:"20"}); const ct = el("input", {type:"number", id:"tc-"+sid+"-"+i, min:"0", step:"1", placeholder:"How many", "aria-label":"How many of kind "+(i+1), style:"width:120px"}); rows.push([nm,ct]); grid.append(nm, ct); }
+    for(let i=0;i<6;i++){ const nm = el("input", {type:"text", id:"tk-"+sid+"-"+i, placeholder:"Kind "+(i+1), "aria-label":"Kind "+(i+1), maxlength:"20"}); const ct = el("input", {type:"number", id:"tc-"+sid+"-"+i, min:"0", step:"1", placeholder:"Count", "aria-label":"How many of kind "+(i+1), style:"width:120px"}); rows.push([nm,ct]); grid.append(nm, ct); }
     const out = el("div");
     const go = el("button", {class:"second", type:"button", onclick:()=>{
       if(resolved) return;
       if(guess && !guess.value.trim()){ fb.className="fb bad"; fb.textContent="Type your guess first."; return; }
-      const cats=[], vals=[]; rows.forEach(([nm,ct])=>{ const n = parseInt(ct.value,10); if(nm.value.trim() && n>=0){ cats.push(nm.value.trim().slice(0,20)); vals.push(n); } });
-      if(cats.length < 2){ fb.className="fb bad"; fb.textContent="Fill in at least 2 kinds, each with a count."; return; }
+      const cats=[], vals=[]; rows.forEach(([nm,ct])=>{ const n = Number(ct.value); if(nm.value.trim() && ct.value!=="" && Number.isInteger(n) && n>=0 && n<=500){ cats.push(nm.value.trim().slice(0,20)); vals.push(n); } });
+      if(cats.length < 2 || Math.max(...vals) < 1){ fb.className="fb bad"; fb.textContent="Fill in at least 2 kinds, each with a whole-number count. At least one count must be more than 0."; return; }
       fb.className=""; fb.textContent="";
       out.replaceChildren(figure({k:"bar", title:"What I counted", cats, vals}));
       const max = Math.max(...vals), sum = vals.reduce((a,b)=>a+b,0);
@@ -823,8 +841,8 @@ function renderItem(kid, sid, item, done, opts){
       const chk = el("button", {class:"second", type:"button", onclick:()=>{
         if(resolved) return;
         if(sel.value==="" || tot.value===""){ fb2.className="fb bad"; fb2.textContent="Answer both questions."; return; }
-        const okMost = vals[parseInt(sel.value,10)]===max, okTot = parseInt(tot.value,10)===sum;
-        if(okMost && okTot){ fb2.className="fb good"; fb2.textContent = guess ? "You guessed "+guess.value.trim()+". You counted the most "+cats[vals.indexOf(max)]+"." : "Yes. Does your notebook graph match this one?"; rows.forEach(r=>r.forEach(x=>x.disabled=true)); finish({first, value:{cats, vals, guess: guess ? guess.value.trim().slice(0,20) : null}}); }
+        const okMost = vals[parseInt(sel.value,10)]===max, okTot = Number(tot.value)===sum;
+        if(okMost && okTot){ fb2.className="fb good"; fb2.textContent = guess ? "You guessed "+guess.value.trim()+". The most was "+cats[vals.indexOf(max)]+"." : "Yes. Does your notebook graph match this one?"; rows.forEach(r=>r.forEach(x=>x.disabled=true)); chk.disabled = true; sel.disabled = true; tot.disabled = true; finish({first, value:{cats, vals, guess: guess ? guess.value.trim().slice(0,20) : null}}); }
         else { first=false; fb2.className="fb bad"; fb2.textContent = !okMost ? "Look at the bars again. Which one is tallest? If two are tied, pick either." : "Add up all your counts again."; }
       }}, "Check");
       out.append(el("div", {class:"stack", style:"margin-top:10px"}, el("label", {for:"ts-"+sid}, "Which kind had the most? ", sel), el("label", {for:"tt-"+sid}, "How many did you count in all? ", tot), el("div", null, chk), fb2));
@@ -836,12 +854,15 @@ function renderItem(kid, sid, item, done, opts){
     const stage = el("div", {class:"stack", style:"margin-top:10px"});
     const padBtn = el("button", {type:"button", class:"reactpad"}, "");
     const run = (hand)=>{
-      stage.replaceChildren(el("p", null, el("b", null, "Use your "+hand.toUpperCase()+" hand. "), "Click the box the moment it turns green. Try "+(data[hand].length+1)+" of "+N+"."), padBtn);
+      stage.replaceChildren(el("p", null, el("b", null, "Use your "+hand.toUpperCase()+" hand. "), TAP+" the box the moment it turns green. Try "+(data[hand].length+1)+" of "+N+"."), padBtn);
       let t0 = null, timer = null;
       const wait = ()=> window.__FAST ? 30 : 1000 + Math.random()*2000;
-      const green = ()=>{ t0 = performance.now(); padBtn.className = "reactpad go"; padBtn.textContent = "Click!"; };
+      const green = ()=>{ t0 = performance.now(); padBtn.className = "reactpad go"; padBtn.textContent = TAP+"!"; };
       padBtn.className = "reactpad"; padBtn.textContent = "Wait for green…";
-      padBtn.onclick = ()=>{
+      let byPointer = false;
+      padBtn.onpointerdown = (ev)=>{ byPointer = true; ev.preventDefault(); hit(); };
+      padBtn.onclick = ()=>{ if(byPointer){ byPointer = false; return; } hit(); };   // keyboard and assistive tech arrive here
+      const hit = ()=>{
         if(t0===null){ clearTimeout(timer); padBtn.textContent = "Too soon. Wait for green…"; timer = setTimeout(green, wait()); return; }
         data[hand].push(Math.round(performance.now()-t0));
         if(data[hand].length < N) run(hand); else if(hand==="right") between(); else results();
@@ -856,10 +877,10 @@ function renderItem(kid, sid, item, done, opts){
       const chk = el("button", {class:"second", type:"button", onclick:()=>{
         if(resolved || sel.value==="") return;
         const truth = mr<ml ? "right" : ml<mr ? "left" : "tie";
-        if(sel.value===truth){ sel.disabled = true; fb2.className="fb good"; fb2.textContent = "Yes. A lower time means a faster click. You predicted: "+predict+"."; finish({first, value:{right:data.right, left:data.left, predict, mr, ml}}); }
+        if(sel.value===truth){ sel.disabled = true; fb2.className="fb good"; fb2.textContent = "Yes. A lower time means a faster hand. You predicted: "+predict+"."; finish({first, value:{right:data.right, left:data.left, predict, mr, ml}}); }
         else { first = false; fb2.className="fb bad"; fb2.textContent = "Look again. Lower times are faster."; }
       }}, "Check");
-      stage.replaceChildren(el("p", null, el("b", null, "Your data. "), "Each dot is one click."), figure({k:"strip2", la:"Right", lb:"Left", a:data.right, b:data.left}),
+      stage.replaceChildren(el("p", null, el("b", null, "Your data. "), "Each dot is one try."), figure({k:"strip2", la:"Right", lb:"Left", a:data.right, b:data.left}),
         el("p", null, "Middle time, right hand: "+mr+" ms. Middle time, left hand: "+ml+" ms."),
         el("label", {for:"rs-"+sid}, "Going by the middle times, which hand was faster? ", sel), el("div", null, chk), fb2);
     };
@@ -875,7 +896,7 @@ function renderItem(kid, sid, item, done, opts){
 const app = document.getElementById("app");
 let VIEW = {name:"home"}, timerId = null;
 function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
-function go(v){ stopTimer(); VIEW = v; render(); window.scrollTo(0,0); }
+function go(v){ stopTimer(); if(v.name!=="parent" && v.name!=="cards" && typeof parentOpen!=="undefined") parentOpen = false; VIEW = v; render(); window.scrollTo(0,0); }
 function currentKid(){ return VIEW.kid || null; }
 
 function renderSync(){
@@ -897,7 +918,7 @@ function renderNav(){
   if(kid){ kids.push(mk("Today", {name:"kid", kid}, VIEW.name==="kid"), mk("My path", {name:"path", kid}, VIEW.name==="path")); }
   kids.push(mk("Switch person", {name:"home"}, VIEW.name==="home"), mk("Parent", {name:"parent"}, VIEW.name==="parent"));
   nav.replaceChildren(...kids);
-  document.body.classList.toggle("kid-k4", kid==="k4");
+  document.body.classList.toggle("kid-k4", kid==="k4"); document.body.classList.toggle("in-session", VIEW.name==="session" || VIEW.name==="gate");
 }
 function render(){
   renderNav(); renderSync();
@@ -936,11 +957,11 @@ function viewKid(kid){
     wrap.append(el("section", {class:"card next stack"},
       el("div", {class:"eyebrow"}, p.unit.title),
       el("h2", null, s.title),
-      el("p", {class:"muted"}, s.mins+" minutes. "+k.needs),
+      el("p", {class:"muted"}, s.mins+" minutes. "+(s.needs || k.needs)), (s.link && TOUCH) ? el("p", {class:"small fb note"}, "Do this one on a computer. It uses CODAP, which needs a mouse or trackpad.") : null,
       c.todayN>=1 ? el("p", {class:"small muted"}, c.todayN+" done today. Keep going if you want to.") : null,
       el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>startSession(kid, s.id)}, c.due ? "Start: warm-up, then session" : "Start session"),
-        k.age<10 ? el("button", {class:"second", type:"button", onclick:()=>startSession(kid, s.id, false, true)}, "I did it from my card") : null,
-        el("button", {class:"ghost", type:"button", onclick:()=>go({name:"gate", kid, gid:p.unit.gate.id})}, "Know this unit already? Take the gate quiz"))));
+        
+        el("button", {class:"ghost", type:"button", onclick:()=>go({name:"gate", kid, gid:p.unit.gate.id})}, "Know this unit already? Take the gate quiz"), k.age<10 ? el("button", {class:"ghost", type:"button", onclick:()=>startSession(kid, s.id, false, true)}, "I did it from my card") : null), k.age<10 ? el("p", {class:"small muted"}, "Did this mission on paper from a printed card? Tap “I did it from my card” to go straight to the check.") : null));
   } else if(p.kind==="gate"){
     const gsx = gateState(kid, p.unit);
     wrap.append(el("section", {class:"card next stack"},
@@ -1027,26 +1048,28 @@ function viewSession(v){
     const tm = el("div", {class:"timer", "aria-live":"off"}, pad(s.mins)+":00");
     const tick = ()=>{ const left = s.mins*60 - Math.floor((Date.now()-v.started)/1000); if(left<=0){ tm.textContent="Time"; tm.classList.add("up"); } else tm.textContent = pad(Math.floor(left/60))+":"+pad(left%60); };
     stopTimer(); timerId = setInterval(tick, 1000); tick();
-    wrap.append(el("div", {class:"row", style:"justify-content:space-between"}, el("div", null, el("div", {class:"eyebrow"}, found.unit.title + (v.practice ? " · practice" : "")), el("h1", null, s.title)), tm));
+    wrap.append(el("div", {class:"row", style:"justify-content:space-between; flex-wrap:nowrap; align-items:flex-start"}, el("div", {style:"flex:1; min-width:0"}, el("div", {class:"eyebrow"}, found.unit.title + (v.practice ? " · practice" : "")), el("h1", null, s.title)), tm));
     const ol = el("ol", {class:"steps"});
     if(v.stepIdx==null) v.stepIdx = young ? 0 : s.steps.length-1;
     const more = v.stepIdx < s.steps.length-1;
     s.steps.forEach((step,si)=>{ if(si > v.stepIdx) return; const text = typeof step==="string" ? step : step.t; ol.append(el("li", null, el("div", null, el("span", null, text), AI.canSpeak() && young ? el("button", {class:"say", type:"button", onclick:()=>AI.speak(text)}, "Read it to me") : null, (typeof step!=="string" && step.fig) ? figure(step.fig) : null))); });
     const card = el("section", {class:"card stack"}, s.link ? el("div", null, el("a", {class:"link", href:s.link.u, target:"_blank", rel:"noopener"}, s.link.t)) : null, ol);
-    card.append(showBlock(kid, s));
+    { const sb = showBlock(kid, s); if(sb) card.append(sb); }
     wrap.append(card);
-    if(more) wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ v.stepIdx++; render(); const lis = document.querySelectorAll("ol.steps > li"); if(lis.length) lis[lis.length-1].scrollIntoView({block:"center"}); }}, "Next step"), el("span", {class:"small muted"}, "Step "+(v.stepIdx+1)+" of "+s.steps.length)));
-    else wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ stopTimer(); v.stage="check"; v.mins = Math.max(1, Math.round((Date.now()-v.started)/60000)); render(); window.scrollTo(0,0); }}, "I did it. Go to the exit check"), el("span", {class:"small muted"}, "When the timer runs out, finish your thought and move on.")));
+    if(more) wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ v.stepIdx++; render(); const pb = document.querySelector("#app button.primary"); if(pb) pb.scrollIntoView({block:"end"}); window.scrollBy(0, 16); }}, "Next step"), el("span", {class:"small muted"}, "Step "+(v.stepIdx+1)+" of "+s.steps.length)));
+    else wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ stopTimer(); v.stage="check"; v.mins = Math.max(1, Math.round((Date.now()-v.started)/60000)); render(); window.scrollTo(0,0); }}, s.check[0].t==="react" ? "Start the experiment" : s.check[0].t==="tally" ? "Next: type my counts" : "I did it. Go to the quick check"), el("span", {class:"small muted"}, "When the timer runs out, finish your thought and move on.")));
     if(AI.sample) wrap.append(coachBox(kid, s, v));
     return wrap;
   }
   if(v.stage==="check"){
-    wrap.append(el("div", {class:"eyebrow"}, "Exit check"), el("h1", null, s.title));
+    wrap.append(el("div", {class:"eyebrow"}, s.check[0].t==="react" ? "Experiment" : "Quick check"), el("h1", null, s.title));
     const card = el("section", {class:"card stack"}); let left = s.check.length;
-    if(v.card) card.append(showBlock(kid, s));
+    if(v.card){ const sb = showBlock(kid, s); if(sb) card.append(sb); }
     const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>finishSession(v, s)}, v.practice ? "Finish practice" : "Finish session");
-    s.check.forEach(it=> card.append(renderItem(kid, s.id, it, (res)=>{ v.results[it.id] = res; if(--left===0) fin.disabled=false; }, {practice:v.practice})));
-    wrap.append(card, el("div", null, fin));
+    const gateRest = s.check[0].t==="react", nodes = [];
+    s.check.forEach((it, idx)=>{ const nd = renderItem(kid, s.id, it, (res)=>{ v.results[it.id] = res; if(idx===0 && gateRest) nodes.slice(1).forEach(x=>{ x.style.display = ""; }); if(!v.practice && res && res.value){ const stx = Store.get(kid); stx.ans[s.id] = stx.ans[s.id] || {}; stx.ans[s.id][it.id] = res.value; Store.save(kid); } if(--left===0){ fin.disabled=false; finNote.textContent = ""; } }, {practice:v.practice}); if(idx>0 && gateRest) nd.style.display = "none"; nodes.push(nd); card.append(nd); });
+    const finNote = el("span", {class:"small muted"}, "Answer every question to finish.");
+    wrap.append(card, el("div", {class:"row"}, fin, finNote));
     return wrap;
   }
   // done
@@ -1133,6 +1156,7 @@ function viewGate(v){
       el("div", {class:"row", style:"justify-content:space-between"}, el("h3", null, "2. Project"), el("span", {class:"pill "+(gx.prodOk?"good":"warn")}, gx.prodOk ? "Signed off" : "Needs a parent")),
       el("p", null, g.product.label), el("p", {class:"small muted"}, "A parent checks it against this list in the Parent view:"), el("ul", {class:"small"}, g.product.rubric.map(r=>el("li", null, r)))));
   }
+  if(gx.quizOk && !gx.prodOk) wrap.append(el("section", {class:"card next stack"}, el("h2", null, "Quiz passed."), el("p", null, "Next: show your project to a parent. They sign it off in the Parent view."), el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"kid", kid})}, "Back to today"))));
   if(gx.passed) wrap.append(el("section", {class:"card next stack"}, el("h2", null, "Gate passed."), el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"kid", kid})}, "Back to today"))));
   return wrap;
 }
@@ -1161,7 +1185,7 @@ function viewParent(){
         el("button", {class:"second", type:"button", onclick:()=>{ ps.names = {}; for(const kk of Object.keys(nmIn)){ const val = nmIn[kk].value.trim(); if(val) ps.names[kk] = val; } Store.save("parent"); render(); }}, "Save names")))); }
   for(const kid of Object.keys(KIDS)){
     const st = Store.get(kid), c = counts(kid), p = position(kid), t = today();
-    const last28 = st.log.filter(e=> e.d >= addDays(t,-27)).length;
+    const last28 = st.log.filter(e=> e.d >= addDays(t,-27) && e.sid!=="review").length;
     const pctf = c.firstAuto ? Math.round(100*c.firstOk/c.firstAuto)+"%" : "–", pctr = st.stats.rn ? Math.round(100*st.stats.rok/st.stats.rn)+"%" : "–";
     const dn = Object.values(st.done), solo = SOLO.map((_,i)=>dn.filter(x=>x.solo===i).length), feel = FEEL.map((_,i)=>dn.filter(x=>x.feel===i).length);
     const sec = el("section", {class:"card stack"}, el("h2", null, KIDS[kid].name),
@@ -1231,8 +1255,10 @@ function syncCard(pre){
     btn.disabled = true; fb.className = "fb note"; fb.textContent = "Checking…";
     let msg; try{ msg = await withTimeout(GH.test(cfg), 15000); }catch(e){ msg = "GitHub could not be reached. Check the connection and try again."; }
     if(msg){ btn.disabled = false; fb.className = "fb bad"; fb.textContent = msg; return; }
-    GH.setCfg(cfg); Store.db = GH.db(cfg); Store.kind = "github";
+    GH.setCfg(cfg); Store.db = GH.db(cfg); Store.kind = "github"; Store.fail = {};
+    let remote = null; try{ const snap = await Store.db.doc("state/parent").get(); if(snap && snap.exists) remote = snap.data(); }catch(e){}
     for(const k of ["k7","k4","parent"]){ try{ await Store.pull(k); }catch(e){} }
+    if(remote && remote.code){ const pp = Store.get("parent"); if(pp.code !== remote.code || JSON.stringify(pp.names||{}) !== JSON.stringify(remote.names||{})){ pp.code = remote.code; pp.names = remote.names || {}; Store.save("parent"); } parentOpen = false; }
     renderSync(); render();
   }}, "Connect");
   sec.append(el("p", {class:"small muted"}, pre ? "Connect this device to your progress repo first. The parent code and all progress will come across." : "Progress can follow the kids between devices through a private GitHub repo that you own. Enter the repo, and a token that can write only to that repo. The token stays on this device."),
@@ -1253,10 +1279,10 @@ function viewCards(kid){
       wrap.append(el("section", {class:"card stack mcard"},
         el("div", {class:"row", style:"justify-content:space-between"}, el("div", {class:"eyebrow"}, u.title+" · Mission "+n), el("span", {class:"small muted"}, s.mins+" minutes")),
         el("h2", null, s.title),
-        el("p", {class:"small muted"}, "You need: "+k.needs.charAt(0).toLowerCase()+k.needs.slice(1)),
+        el("p", {class:"small muted"}, "You need: "+(s.needs || k.needs).charAt(0).toLowerCase()+(s.needs || k.needs).slice(1)),
         ol,
         s.link ? el("p", {class:"small"}, "This mission uses CODAP on a computer. Open it from Data Lab.") : null,
-        el("p", {class:"small cardfoot"}, el("b", null, "Done? "), k.age<10 ? "Open Data Lab and tap “I did it from my card”. The check takes about two minutes." : "Open Data Lab and do the exit check.")));
+        el("p", {class:"small cardfoot"}, el("b", null, "Done? "), k.age<10 ? "Open Data Lab and tap “I did it from my card”. The check takes about two minutes." : "Open Data Lab and do the quick check.")));
     } }
   return wrap;
 }
@@ -1275,6 +1301,8 @@ function viewCards(kid){
     if(changed && (VIEW.name==="home" || VIEW.name==="kid" || VIEW.name==="path" || VIEW.name==="parent")) render();
   });
   AI.connect().then(()=>{ if(VIEW.name==="session" && VIEW.stage==="task") render(); });
+  const retryFailed = ()=>{ if(Store.db && Store.err!==401) for(const k of Object.keys(Store.fail)) Store.push(k); };
+  window.addEventListener("online", retryFailed); setInterval(retryFailed, 60000);
   document.addEventListener("visibilitychange", async ()=>{
     if(document.visibilityState!=="visible" || !Store.db) return;
     let changed = false; for(const k of ["k7","k4","parent"]){ try{ if(await Store.pull(k)) changed = true; }catch(e){} }
