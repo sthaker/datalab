@@ -10,17 +10,17 @@ Sections are marked in the file with `/* ===== NAME ===== */` banners. Search fo
 |---|---|---|
 | `<style>` | `:root` tokens, component classes | All styling. See "CSS conventions". |
 | `CONTENT` | `CODAP_MAMMALS`, `CODAP_NEW`, `MONTH_DOT`, `MONTH_DAYS`, `CONTINENTS`, `KIDS`, `TRACKS` | Every word of curriculum. Schema in `AUTHORING.md`. `KIDS[kid]` has `dflt` (label when no name is set), `tone` (`s` or `m`, picks the accent color), `age` (under 10 switches on one-step-at-a-time, read-aloud buttons and the card button), `weekly` (goal, 3), `needs` (default "you need" sentence). |
-| `HELPERS` | `el`, `dstr`, `today`, `addDays`, `weekStart`, `shuffle`, `withTimeout`, `esc` | `el(tag, attrs, ...kids)` is the only DOM builder. It skips `null` and `false` children. Attribute `svg` sets `innerHTML` (used for generated figures only); `on*` adds a listener. Dates are local `YYYY-MM-DD` strings; weeks start on Monday. |
+| `HELPERS` | `el`, `dstr`, `today`, `addDays`, `weekStart`, `shuffle`, `withTimeout`, `esc`, `ansPick`, `normLog` | `el(tag, attrs, ...kids)` is the only DOM builder. It skips `null` and `false` children. Attribute `svg` sets `innerHTML` (used for generated figures only); `on*` adds a listener. Dates are local `YYYY-MM-DD` strings; weeks start on Monday. |
 | `content lookups` | `unitsOf`, `findSession`, `findGate`, `autoItems`, `itemByKey` | Reading `TRACKS`. `autoItems(unit)` is the pool of `mc`/`num` items with keys `sid.itemId` and `gateId.itemId`. Also defines `KIDS[k].name` and `.named` as getters over the parent doc, `TOUCH`/`TAP`, and `inClaude()`. |
 | `GITHUB SYNC` | `GH.cfg`, `GH.setCfg`, `GH.db`, `GH.test`, `GH.fail` | The GitHub contents API backend. Exposes the same `db.doc(path).get()/set()` shape as the Claude artifact db. |
 | `STORE` | `Store.blank`, `get`, `save`, `pull`, `push`, `merge`, `adopt`, `reset`, `connect` | All persistent state: memory, `localStorage`, remote. |
-| `UNFINISHED SESSION` | `WIP`, `activeMin`, `isReal`, `wipSave`, `wipLine` | The device-only note of where a kid stopped. |
+| `UNFINISHED SESSION` | `WIP`, `activeMin`, `isReal`, `newAtt`, `epochOf`, `liveRun`, `wipSave`, `wipLine` | The device-only note of where a kid stopped, with that attempt's drafts. `liveRun(v, att)` is the guard every progress writer checks (see "Runs, attempts and epochs"). |
 | (after it) | `AI.connect`, `AI.speak`, `AI.grade`, `AI.coach` | Claude-only pieces plus browser speech. |
 | `FIGURES` | `FW`, `niceTop`, `barFig`, `dotRows`, `stripFig`, `median`, `figure` | SVG strings for the four figure kinds. |
 | `PROGRESS LOGIC` | `gateState`, `position`, `counts`, `winsOf`, `logReview`, `BOX_DAYS`, `schedule` | Everything derived from state: where the kid is, what is passed, streaks, review scheduling. Pure functions over `Store.get(kid)` except `schedule` and `logReview`, which mutate it. |
 | `ITEM WIDGETS` | `renderItem(kid, sid, item, done, opts)` | One function, one branch per item type. Calls `done({first, value?, interests?})` exactly once when resolved. `opts`: `oneShot` (warm-ups and gates), `noShuffle`, `practice`, `tryout`. |
 | `VIEWS` | `VIEW`, `go`, `render`, `renderNav`, `renderSync`, `viewHome`, `viewKid`, `viewPath` | Routing and the simple screens. |
-| `session` | `startSession`, `restartSession`, `sessionRow`, `tryBar`, `showBlock`, `viewSession`, `selfReport`, `finishSession`, `coachBox` | The session flow and its four stages. `finishSession` is the only writer of `done[sid]`. |
+| `session` | `startSession`, `restartSession`, `sessionRow`, `tryBar`, `showBlock`, `collectBlock`, `viewSession`, `selfReport`, `finishSession`, `coachBox` | The session flow and its four stages. `finishSession` is the only writer of `done[sid]`. |
 | `gate` | `makeQuiz`, `viewGate` | Gate quiz, score, product panel. The only writer of `gates[gid].quiz`. |
 | `try the lessons` | `viewTryout` | The grown-up tryout list. |
 | `parent` | `parentOpen`, `viewParent`, `syncCard`, `viewCards` | Parent code, names, per-kid numbers, sign-off (the only writer of `gates[gid].sign`), erase, copy, sync connect and disconnect, mission cards. |
@@ -38,10 +38,10 @@ Three documents, each a plain JSON object: `k7`, `k4`, `parent`. All start from 
 | `epoch` | number | `Store.reset` | Bumped by Erase. See merge. |
 | `ts` | ms timestamp | `Store.save` | Last local save. |
 | `done` | `{ [sid]: {t, first, auto, mins, card?, solo?, feel?} }` | `finishSession`, `selfReport` | `t` finish time; `auto` number of `mc`/`num` items; `first` how many of those were right first try; `mins` minutes actually worked (all sittings, capped at 3 × the session's `mins`; the session's `mins` for a card run); `card:1` if started from "I did it from my card"; `solo` index into `SOLO`; `feel` index into `FEEL`. |
-| `ans` | `{ [sid]: { [itemId]: value } }` | check callback in `viewSession`, `finishSession` | Stored answers: `txt` `{a, ok, fb}`, `tally` `{cats, vals, guess}`, `react` `{right, left, predict, mr, ml}`. Read by `show`, Parent view, and to refill a text box. |
+| `ans` | `{ [sid]: { [itemId]: value } }` | `finishSession` (all of one attempt's answers together), `collectBlock` | Stored answers: `txt` `{a, ok, fb}`, `tally` `{cats, vals, guess}`, `react` `{right, left, predict, mr, ml}`. A value written by `collectBlock` also carries `u`, its write time. Read by `show` and Parent view. Unfinished answers are not here; they are drafts in the WIP note. Older saves may still hold answers for unfinished sessions. |
 | `rev` | `{ [key]: {box, due, u} }` | `schedule` | Spaced review. `key` is `sid.itemId`; `box` 0–4 indexes `BOX_DAYS`; `due` is a date string; `u` update time. |
 | `gates` | `{ [gid]: {quiz?, sign?, ext?} }` | `viewGate`, `viewParent` | `quiz`: `{best, last, n, t, d, tries, missed}`. `sign`: `{t}`. `ext` is merged but nothing writes it (reserved for outside checks). |
-| `log` | `[{d, sid}]` | `finishSession`, `logReview` | One entry per first completion, plus at most one `{sid:"review"}` per day. Drives week counts and streaks. |
+| `log` | `[{d, sid}]` | `finishSession`, `logReview` | One entry per first completion, plus at most one `{sid:"review"}` per day. Drives week counts and streaks. Always read through `normLog`, which keeps each session once on its earliest date, so a log from before 10 November that holds one session on two dates still counts it once. |
 | `interests` | `[string]` | `pick` items | Unused by current content. |
 | `stats` | `{fn, fok, rn, rok}` | `finishSession`, warm-up callback | First-try attempts and hits on check items; review attempts and hits. |
 
@@ -75,11 +75,11 @@ Same blank shape (the kid fields stay empty) plus:
 | Field | Rule |
 |---|---|
 | `done[sid]` | The entry with the later `t`. `ans[sid]` follows the winning side, then falls back to the other. |
-| `ans` (sessions not in `done`) | Either side, first found. |
+| `ans` (sessions not in `done`) | Item by item (`ansPick`): the value with the later `u` wins; without `u`, the larger JSON text, which is arbitrary but the same in either merge order. |
 | `rev[key]` | The entry with the later `u`. |
 | `gates[gid].quiz` | The attempt with the later `t`, but `best` and `tries` are the max of both. |
 | `gates[gid].sign`, `ext[*]` | Later `t`. |
-| `log` | Union, deduplicated on `d|sid`, sorted by date. |
+| `log` | Union through `normLog`: each session once, on its earliest date; one review per date; sorted by date. |
 | `interests` | Union. |
 | `stats.*` | Max of both. Known flaw: two devices that each add attempts undercount. |
 | `code`, `names` | From the side with the later `ts`. |
@@ -117,16 +117,23 @@ Flow:
 
 ## Unfinished sessions (WIP)
 
-`WIP` stores `{sid, stage, stepIdx, card, startedAt, minutesSoFar, t}` under `datalab:wip:<kid>`.
+`WIP` stores `{sid, stage, stepIdx, card, startedAt, minutesSoFar, t, att, epoch, drafts}` under `datalab:wip:<kid>`. `att` is the attempt id, `epoch` the kid's epoch when the run started, `drafts` `{ [itemId]: value }` the answers resolved so far in this attempt.
 
 - Written by `wipSave(v)` for real sessions only (`isReal`: not practice, not tryout, has a session id) in the `task` and `check` stages: on every render of those stages, on `go()` away, on "Stop for now", and when the page is hidden.
 - Read by `WIP.get(kid)`, which discards the note unless it is under 14 days old and the kid's current position is still that session.
 - Today then shows where the kid stopped, "Keep going" (resume: no warm-up, same stage and step, clock continues from `minutesSoFar`) and "Start this session over".
 - Each session screen has "Stop for now" and "Start over" (with a confirmation). `restartSession` goes back to step 1, drops this run's answers and zeroes the clock.
-- Resuming at the check re-asks the items. Typed answers are still in the boxes because `txt`, `tally` and `react` values are saved to `ans` as soon as each resolves.
+- Resuming at the check re-asks the items. Typed answers are still in the boxes because each resolved value is kept in `drafts` and a text box refills only from its own attempt's draft. Drafts reach `ans` only at Finish, all together. A note without `drafts` (written before 10 November) imports that session's old `ans` entry once, on Keep going.
+- Dropped by `WIP.get` when its `epoch` differs from the kid's current epoch.
 - Cleared on finish, on start over, on Erase (epoch change), and when stale.
 - Time away does not count: `park` on `visibilitychange`/`pagehide` folds elapsed time into `v.base` and stops the clock; it restarts on return.
 - Never synced. A session stopped on the phone cannot be resumed on the iPad; it starts from the top there.
+
+### Runs, attempts and epochs
+
+A session run gets an attempt id (`att`) and records the kid's `epoch` when it starts; a gate run records the epoch when it first renders. Start over (either entry point) makes a new attempt. Every handler that writes progress first checks `liveRun(v, att)`: the view is still the current one, the epoch has not changed, and, for session check items and Finish, the attempt is the one that rendered them. So a Finish button, a warm-up answer, a gate score or an AI grade that settles after a Start over or an Erase writes nothing.
+
+When `Store.adopt` sees a different epoch for a kid (an Erase here or pulled from another device), it clears that kid's note and calls `epochChanged(kid)`. If a real session or gate for that kid is on screen, the page drops it and goes to Today with a one-line note, without `go()`'s save of the outgoing view. Tryout runs are left alone.
 
 ## Routing and views
 
@@ -161,7 +168,7 @@ Practice vs tryout vs real:
 | Piece | Needs | Behavior | Outside Claude |
 |---|---|---|---|
 | Coach (`coachBox`, `AI.coach`) | `sample` | A "Stuck? Ask the coach for a hint" panel on the task screen. The prompt carries the lesson steps and the check questions it must not answer. Six questions per session. Replies capped at 500 characters. | Not rendered. |
-| Written-answer grading (`AI.grade`) | `sample` | Returns `{ok, fb}` against the item's `rubric`. One resubmission, then the answer is saved either way with the verdict. | Returns `null`; the answer is saved as "A parent will read this one". |
+| Written-answer grading (`AI.grade`) | `sample` | Returns `{ok, fb}` against the item's `rubric`. One resubmission, then the answer is saved either way with the verdict. A reply counts only if it parses to a boolean `ok` and a non-empty string `fb`; anything else, and a call that takes over 20 s (`AI.GRADE_MS`), returns `null`, which the page treats like no grader: "A parent will read this one." | Returns `null`; the answer is saved as "A parent will read this one". |
 | Read-aloud (`AI.speak`) | `tts`, or the browser's `speechSynthesis` | "Read it to me" on steps and questions for a kid under 10. | Works wherever the browser has speech synthesis. Not verified on a real device. |
 
 Both prompts include the kid's display name and age. That text goes only to the Claude sampling capability in the owner's account, never to the public page's network.
@@ -181,5 +188,5 @@ Both prompts include the kid's display name and age. That text goes only to the 
 ## Test hooks in the app
 
 - `window.__FAST = true` shortens the reaction-time waits to 30 ms.
-- Globals the tests read or call: `VIEW`, `go`, `position`, `counts`, `gateState`, `unitsOf`, `findSession`, `Store`, `today`. Renaming any of them breaks the tests.
+- Globals the tests read or call: `VIEW`, `go`, `position`, `counts`, `gateState`, `unitsOf`, `findSession`, `Store`, `today`. `test_review_fixes.py` also uses `startSession`, `restartSession`, `render`, `schedule`, `autoItems`, `weekStart`, `addDays`, `WIP`, `AI.sample`, `AI.grade`, `AI.GRADE_MS` and `parentOpen`. Renaming any of them breaks the tests.
 - Selectors the tests rely on: `#app .item`, `.opts button`, `button.primary`, `button.second`, `.tally-grid input`, `.reactpad.go`, `.chips button`, `#pcode`, `#ghrepo`, `#ghtok`, `#sync`, `.mcard`, `input[id^='rb-g-…']`, and several button labels ("Draw my graph", "Check", "Ready", "Sign off", "Set code", "Open", "Connect", "Save names", "Disconnect this device", "I did it from my card").

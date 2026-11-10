@@ -19,7 +19,7 @@ A single-file web app (`index.html`, vanilla JS, no build step) that gives two k
 
 ## Rules that are not negotiable
 
-1. **Privacy.** This repo and the page are public. No names of the kids, parents, pets, school, teachers or city, and no other identifying detail, in `index.html`, tests, docs, commit messages or screenshots. Names are typed in Parent view and live only with the progress. Say "the 7th grader (track k7)", "the 4th grader (track k4)", "the parents", "their school". Before every commit run a case-insensitive grep for the family's names and places over the working tree, and run `tests/test_gh.py` with `DATALAB_FORBID` set to the same pattern. The pattern is not in this repo: ask the owner for it, or have the owner run both. An unset `DATALAB_FORBID` means the check did NOT run; the test prints PASS vacuously. Commands in `docs/OPERATIONS.md`, "Privacy operations". The GitHub account name in the URL is the one accepted exception.
+1. **Privacy.** This repo and the page are public. No names of the kids, parents, pets, school, teachers or city, and no other identifying detail, in `index.html`, tests, docs, commit messages or screenshots. Names are typed in Parent view and live only with the progress. Say "the 7th grader (track k7)", "the 4th grader (track k4)", "the parents", "their school". Before every commit run a case-insensitive grep for the family's names and places over the working tree, and run `tests/test_gh.py` with `DATALAB_FORBID` set to the same pattern. The pattern is not in this repo: ask the owner for it, or have the owner run both. An unset `DATALAB_FORBID` means the check did NOT run; the test prints a SKIP line. Commands in `docs/OPERATIONS.md`, "Privacy operations". The GitHub account name in the URL is the one accepted exception.
 2. **No "null" on screen.** `Node.append(null)` prints the word "null". Build all DOM through `el()`, which drops `null` and `false`. Tests fail on stray `null`, `undefined`, `NaN` or `[object` text.
 3. **Phone first.** Every screen must work at 390 px wide with a thumb: no sideways scroll, tap targets 44 px, inputs at 16 px or more, figures laid out at 340 px (`FW()`).
 4. **Test before ship.** All scripts in `docs/TESTING.md` clean. A new unit also needs a second reviewer and a phone audit.
@@ -62,7 +62,9 @@ The full procedure, the only copy, is "Deploy the page" in `docs/OPERATIONS.md`.
 ## Verified / not verified
 
 - Verified: all test scripts (Chromium, WebKit iPad and iPhone emulation); the page in Apple's iPad simulator with scripted clicks; the live page's bytes after the 9 November push; real GitHub sync from a real phone (connect, parent code and names written); every numeric answer key in the 9 November draft, checked by hand by a second reviewer (keys added or changed since are covered only by the walkthroughs).
-- Not verified: finger taps on a real iPad; a full session by a child; read-aloud audio; CODAP save and reopen (needed between `s11` and `s12`); dragging in CODAP; CODAP menu names against the live tool; the AI grader after its prompt was tightened; the hosted copy's database sync; mission cards on a real printer; tryout and stop/resume on a real device.
+- Verified 10 November, after the outside review of `c23ac9a`: `tests/test_review_fixes.py` (42 checks) passes on the fixed page and fails 28 of its checks on `c23ac9a`; all other scripts clean.
+- Second-reviewer read (Codex, cold, `PEDAGOGY.md` and `AUTHORING.md` only) of the `s11`/`s12` rewrite on 10 November: "ship with listed edits"; the edits were applied (table layout per route, median defined, units in the question, the saved prediction shown, `s11.b` made route-neutral, range defined in `s12`).
+- Not verified: the hosted grader against both `s11` routes; a computer walkthrough of `s11` from an empty profile after a Unit 1A test-out; finger taps on a real iPad; a full session by a child; read-aloud audio; CODAP save and reopen (needed between `s11` and `s12`); dragging in CODAP; CODAP menu names against the live tool; the AI grader after its prompt was tightened; the hosted copy's database sync; mission cards on a real printer; tryout and stop/resume on a real device.
 
 ## Lessons from the first day (keep doing these)
 
@@ -78,7 +80,7 @@ The full procedure, the only copy, is "Deploy the page" in `docs/OPERATIONS.md`.
 
 1. Run the manual checks in `docs/TESTING.md` on real devices (phone, iPad, CODAP on a computer, one printed card set).
 2. Write Unit 1C for each track when a kid is within three sessions of the end (outlines in `TRACKS` and `docs/CURRICULUM.md`). `k7` 1C needs a scatter-plot figure kind.
-3. Test-out skips the data-collection sessions that `s11` depends on; let skipped sessions be opened from My path.
+3. Skipped sessions (passed by test-out) cannot be opened from My path. `s11` now collects the reaction times it needs in place (`collect`), so this is no longer blocking.
 4. Review stats (`stats.*`) merge with `Math.max`, so two devices can undercount attempts.
 5. On a phone, sessions that need CODAP only warn; they do not block.
 6. `walk_webkit.py` lacks the stray-text assertions that `walk.py` has; `SOLVE` is duplicated in four files.

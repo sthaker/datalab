@@ -60,7 +60,8 @@ with sync_playwright() as p:
     b=p.chromium.launch(executable_path=os.environ.get('CHROME','/usr/bin/google-chrome'), args=['--no-sandbox'])
     A=newdev(b)
     FORBID=os.environ.get('DATALAB_FORBID','')
-    ok('source has no forbidden names', (not FORBID) or not re.search(FORBID, open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','index.html')).read()))
+    if not FORBID: print('SKIP source has no forbidden names: DATALAB_FORBID is unset, so the privacy check did not run')
+    else: ok('source has no forbidden names', not re.search(FORBID, open(os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','index.html')).read(), re.I))   # case-insensitive, like the grep
     ok('default labels', 'Seventh grader' in A.inner_text('#app') and 'Fourth grader' in A.inner_text('#app'))
     A.evaluate("go({name:'parent'})"); A.wait_for_timeout(80)
     ok('new device offers sync before the code', A.query_selector('#ghrepo') is not None and 'Already set up on another device' in A.inner_text('#app'))

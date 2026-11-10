@@ -150,7 +150,7 @@ def chromium_pass(p):
     ok('k4: note written when the task starts', (pg.evaluate(WIPJ, 'k4') or {}).get('stepIdx') == 0)
     click(btn(pg, 'Next step')); pg.wait_for_timeout(40)
     w = pg.evaluate(WIPJ, 'k4')
-    ok('k4: note follows the step', w and w['sid'] == 'm02' and w['stage'] == 'task' and w['stepIdx'] == 1 and w['card'] is False and sorted(w.keys()) == ['card', 'minutesSoFar', 'sid', 'stage', 'startedAt', 'stepIdx', 't'], str(w))
+    ok('k4: note follows the step', w and w['sid'] == 'm02' and w['stage'] == 'task' and w['stepIdx'] == 1 and w['card'] is False and sorted(w.keys()) == ['att', 'card', 'drafts', 'epoch', 'minutesSoFar', 'sid', 'stage', 'startedAt', 'stepIdx', 't'], str(w))
     ok('session has the quiet bottom row', btn(pg, 'Stop for now').count() == 1 and btn(pg, 'Start over').count() == 1)
     audit(pg, 'k4 session with bottom row'); shot(pg, 'session_bottom_row')
     click(btn(pg, 'Stop for now')); pg.wait_for_timeout(60)

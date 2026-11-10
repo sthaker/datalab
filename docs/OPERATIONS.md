@@ -159,7 +159,7 @@ Work down the list; most reports end at step 2.
 ## Privacy operations
 
 - Before every commit: `grep -rniE "<family names and places>" . --exclude-dir=.git`, which must print nothing. The pattern is not in this repo and a new developer cannot guess it: ask the owner for it, or have the owner run the command.
-- Then run `DATALAB_FORBID='<the same pattern>' python3 tests/test_gh.py`. It fails if `index.html` matches. The match is case-sensitive unless the pattern starts with `(?i)`, and it reads `index.html` only, so it does not replace the grep. If `DATALAB_FORBID` is unset the check did **not** run: `PASS source has no forbidden names` prints vacuously.
+- Then run `DATALAB_FORBID='<the same pattern>' python3 tests/test_gh.py`. It fails if `index.html` matches. The match is case-insensitive (a pattern that starts with `(?i)` still works), and it reads `index.html` only, so it does not replace the grep. If `DATALAB_FORBID` is unset the check does **not** run and the script prints a `SKIP` line.
 - The GitHub account name appears in the Pages URL and the repo names. That is unavoidable and accepted.
 - Test names in `tests/` are placeholders. Do not replace them with real ones.
 - Screenshots from tests (`tests/*.png`, `tests/phone_shots/`, `tests/out/`) are git-ignored. Keep them that way; a screenshot of a real device could show names.
