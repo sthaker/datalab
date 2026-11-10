@@ -13,23 +13,31 @@ There is no server, no build, no CI, and no secrets in this repo.
 
 ## Deploy the page
 
-1. Run every test in `TESTING.md`.
-2. Commit `index.html` (and tests and docs) and push to `main`.
-3. GitHub Pages rebuilds in about a minute. There is no workflow file; Pages is set to deploy from the branch root.
-4. Verify the live bytes:
+This is the one ship procedure. `CLAUDE.md` carries only a summary of it.
+
+1. Edit `index.html`. Update the docs the change touches in the same commit. For new content, work through the pre-ship checklist in `AUTHORING.md`, including its list of places that repeat content counts.
+2. Run every test in `TESTING.md` and read the output against "Clean means"; exit codes alone are not enough. Read the screenshots.
+3. Privacy check (see "Privacy operations" below): the grep over the working tree, and `test_gh.py` run with `DATALAB_FORBID` set. You do not know the pattern; ask the owner for it or have the owner run both. An unset `DATALAB_FORBID` means the check did not run.
+4. Commit `index.html` (and tests and docs) and push to `main`, **only when the owner has asked for that**.
+5. GitHub Pages rebuilds in about a minute. There is no workflow file; Pages is set to deploy from the branch root.
+6. Verify the live bytes against what was pushed, not against the working tree:
 
    ```sh
-   sha256sum index.html
+   git status --short                     # must print nothing
+   git show HEAD:index.html | sha256sum
    curl -s "https://sthaker.github.io/datalab/index.html?v=$(date +%s)" | sha256sum
    ```
 
-   The two hashes must match. Pages caches for about ten minutes; the query string avoids a stale copy. If they still differ after five minutes, check the Pages build under the repo's Actions tab.
-5. Republish the hosted Claude artifact from the same file (next section).
-6. Devices pick up the new page on their next reload. A page left open keeps running the old code until then.
+   The two hashes must match. Hashing the committed file means an uncommitted edit cannot pass or fail the check by accident. Pages caches for about ten minutes; the query string avoids a stale copy. If they still differ after five minutes, check the Pages build under the repo's Actions tab.
+7. Republish the hosted Claude artifact from the same file and verify it (next section).
+8. Update "Verified / not verified" in `CLAUDE.md`.
+9. Devices pick up the new page on their next reload. A page left open keeps running the old code until then.
+
+If you cannot push, cannot reach the artifact, or cannot run a browser, do not work around it; see "Limits an agent may hit" below.
 
 Only `index.html` is deployed in any meaningful sense: the docs and tests ride along in the repo, and the artifact gets `index.html` alone. There is no version number and no changelog; the commit history and `docs/DECISIONS.md` are the record.
 
-Rollback: `git revert` the commit and push. Progress data is forward-compatible as long as stored ids were not renamed (see `AUTHORING.md`).
+Rollback: `git revert` the commit and push, then repeat steps 5 to 7 so both copies match again. Progress data is forward-compatible as long as stored ids were not renamed (see `AUTHORING.md`).
 
 ## The hosted Claude artifact copy
 
@@ -37,7 +45,7 @@ The artifact is the same `index.html`, byte for byte. Inside Claude, `window.cla
 
 Rule: **both copies stay identical.** After every push to `main`, publish a new version of the artifact from the same file. Never edit the artifact directly.
 
-With artifact tools available in the owner's account: find the artifact by title, read its current version id, and publish `index.html` as a new version on that base. Without them, tell the owner: "Republish the Data Lab Mission Control artifact from `index.html` at commit `<hash>`" and give the SHA-256 of the file.
+With artifact tools available in the owner's account: find the artifact by title, read its current version id, and publish `index.html` as a new version on that base. Then read the artifact back and compare the SHA-256 of what it returns with `git show HEAD:index.html | sha256sum`; they must match. If the read-back differs only because the tool wraps or re-serialises the document, say so and report it as not verified. Without artifact access, tell the owner: "Republish the Data Lab Mission Control artifact from `index.html` at commit `<hash>`", give the SHA-256 of the file, and record the hosted copy as behind.
 
 ## The progress repo
 
@@ -112,6 +120,24 @@ For a sync bug that is not one of these, see "Debugging sync" below.
 
 ## Debugging sync
 
+### "Done on one device, missing on the other"
+
+Work down the list; most reports end at step 2.
+
+1. **Read the status line under the header on both devices** (`renderSync()` writes it). "saved to your private GitHub repo and follows you" means that device's last read or write worked. "saved on this device only. GitHub is not reachable right now" means a read or write failed and the device may hold progress it has not pushed, or lack progress it has not pulled. "The GitHub token stopped working" means retries have stopped until a new token is connected. "saved on this device. It does not follow you" means that device was never connected. "saved to this account" means it is the hosted Claude copy. Full table: "When the status line shows a warning" above.
+2. **Rule out the things that are not bugs.**
+   - The session was not finished. Only "Finish session" (`finishSession()`) marks it done. A stopped session is work in progress kept on that device alone (`datalab:wip:<kid>`) and never syncs.
+   - It was done in "Grown-ups: try the lessons" or as practice. Neither saves anything.
+   - One device is on the hosted Claude copy. Its store is the artifact database, separate from the GitHub repo.
+   - The devices are connected to different repos. Compare the repo name shown in Parent view under "Sync across devices" on each.
+   - The other device has not pulled yet. `Store.pull` runs at page load, when the tab becomes visible again, on Connect, and when a kid card is tapped on Home. It does not run while a page sits open on a kid's screen. Reload the page.
+3. **Look at the progress repo**: `state/<kid>.json` and its commit history. If the session id is missing from `done` and there is no commit from about the time it was finished, the first device did not push: a push fault (status line, token, network on that device). If it is in the file and the second device still lacks it after a reload, it is a pull or merge fault on the second device.
+4. **Check `epoch`.** When two copies differ in `epoch`, the higher one wins whole and the other's progress is dropped (`Store.merge`). An Erase on any device, or a hand edit that raised `epoch`, explains progress that vanished everywhere. Compare `epoch` in the repo file with each device's copy.
+5. **Inspect a device.** Without a console: Parent view → "Copy all progress as text" gives both kids' docs as JSON, to paste somewhere readable (treat it as private: it holds the kids' written answers). With one: the values in step 2 of the next list. On an iPhone or iPad that needs Safari's Web Inspector from a Mac (on the device: Settings → Safari → Advanced → Web Inspector; on the Mac: Safari → Develop → the device).
+6. **Reproduce with the `Mock` class in `tests/test_gh.py`**, never against the real repo.
+
+### For any sync bug
+
 1. Reproduce with `tests/test_gh.py`. It drives two or more browser contexts against a mock of the contents API (`Mock` class) and already covers bad token, wrong repo, public repo, read-only token, two devices, a write conflict, a late-connecting device, erase, offline and back, a revoked token, and disconnect. Add the failing sequence there first.
 2. On a real device, open the browser console on the live page: `Store.kind`, `Store.mode`, `Store.err`, `Object.keys(Store.fail)`, `Store.get("k4")`. Then compare with the file in the progress repo and its commit history.
 3. Read `Store.merge`, `Store.push` and `Store.pull` together with the merge table in `ARCHITECTURE.md`. Most sync bugs are merge rules (a field that should union or take the max) or a missing `Store.save` after a mutation.
@@ -122,7 +148,7 @@ For a sync bug that is not one of these, see "Debugging sync" below.
 
 | Limit | What to do instead |
 |---|---|
-| Cannot push to `main` (no credentials, or push blocked by the environment) | Leave the work committed locally only if asked to commit; otherwise leave the working tree. Hand the owner the changed file list, the test output, and the exact commands: `git add …`, `git commit`, `git push origin main`, then the hash check above. |
+| Cannot push to `main` (no credentials, or push blocked by the environment) | Leave the work committed locally only if asked to commit; otherwise leave the working tree. Hand the owner the changed file list, the test output, and the exact commands: `git add …`, `git commit`, `git push origin main`, then the hash check in "Deploy the page". |
 | Cannot create a repository or a token | Never try to work around it. Give the owner the setup steps in "One-time setup". |
 | No access to the owner's Claude artifacts | State that the hosted copy is now behind, with the commit hash and file SHA-256 to republish from. |
 | No access to the progress repo | Expected. An agent should not need it. To tune the next unit, ask the owner to paste "Copy all progress as text" from Parent view, and remind them it contains the kids' names. |
@@ -132,7 +158,8 @@ For a sync bug that is not one of these, see "Debugging sync" below.
 
 ## Privacy operations
 
-- Before every commit: `grep -rniE "<family names and places>" . --exclude-dir=.git`. The owner keeps the pattern; `tests/test_gh.py` takes the same pattern through the `DATALAB_FORBID` environment variable and fails if `index.html` matches.
+- Before every commit: `grep -rniE "<family names and places>" . --exclude-dir=.git`, which must print nothing. The pattern is not in this repo and a new developer cannot guess it: ask the owner for it, or have the owner run the command.
+- Then run `DATALAB_FORBID='<the same pattern>' python3 tests/test_gh.py`. It fails if `index.html` matches. The match is case-sensitive unless the pattern starts with `(?i)`, and it reads `index.html` only, so it does not replace the grep. If `DATALAB_FORBID` is unset the check did **not** run: `PASS source has no forbidden names` prints vacuously.
 - The GitHub account name appears in the Pages URL and the repo names. That is unavoidable and accepted.
 - Test names in `tests/` are placeholders. Do not replace them with real ones.
 - Screenshots from tests (`tests/*.png`, `tests/phone_shots/`, `tests/out/`) are git-ignored. Keep them that way; a screenshot of a real device could show names.

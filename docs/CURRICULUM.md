@@ -116,9 +116,11 @@ Dependencies: `m04` and `m05` use the notebook tally from `m03`. `m08` and `m12`
 | 3 | A handful tells you about the bag | A sample hints at the whole. Product: guess the bag from a handful, then count the bag. |
 | 4 | Graphs that trick you | A number line that does not start at 0; pictures of different sizes. Builds on `m05.c`. |
 | 5 | Ask eight people two questions | A two-question survey. Product: two tallies. |
-| 6 | Make your first poster | Product, parent-signed: question, graph, three sentences. |
+| 6 | Make your first poster | Product, parent-signed: the poster is the Gate 1C product. |
 
-Ends with Gate 1C and then the Phase 1 gate (planned, not in the page): Khan Academy grade 3 unit test on representing data at 90%.
+Gate 1C (`g-m1c`) has a product: the first poster, signed off by a parent in Parent view. Proposed rubric lines, for the owner to confirm before the unit ships: states the question; shows how the data was collected; graph has a title, labels and a number line from 0; one sentence says what the graph shows; asks one "I wonder" question.
+
+After Gate 1C comes the Phase 1 gate (planned, not in the page): Khan Academy grade 3 unit test on representing data at 90%.
 
 ## Gates and outside checks, in one place
 

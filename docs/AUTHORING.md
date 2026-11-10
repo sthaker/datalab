@@ -38,7 +38,7 @@ TRACKS = {
 { id:"m1c", title:"Unit 1C: Fair or not?", planned:true, list:["topic", ...], note:"one sentence" }
 ```
 
-`position()` stops at the first unit that is `planned` or has no `sessions`. To turn an outline into a written unit, delete `planned`, `list` and `note`, add `sessions` and `gate`, and keep the `id` and `title`. Add an outline for the following unit after it so My path still shows what is coming.
+`position()` stops at the first unit that is `planned` or has no `sessions`. To turn an outline into a written unit, delete `planned`, `list` and `note`, add `sessions` and `gate`, and keep the `id` and `title`. Add an outline for the following unit after it so My path still shows what is coming. If the unit being written is the last in its phase (1C is the last of Phase 1), no following outline is needed: the next phase already shows on My path. The outline's `note` ("Ends with the Phase 1 gate: …") is deleted with the outline, so move that sentence to the phase's `blurb`, or leave it to `CURRICULUM.md`, which already states it.
 
 ### Session
 
@@ -101,7 +101,7 @@ Set `tol` when rounding is reasonable (for a mean of 10.43, `a:10.4, tol:0.05`).
 
 The walkthrough tests type a fixed answer of about 200 characters, so `min` above 200 makes the tests fail.
 
-**`tally`**: six rows of "kind" and "count". "Draw my graph" needs at least 2 kinds, whole-number counts from 0 to 500, and at least one count above 0. The page draws a bar graph, then asks which kind had the most and how many in all; both must match the kid's own numbers. With `predict:true` a "My guess for the most" box comes first and is required.
+**`tally`**: six rows of "kind" and "count". "Draw my graph" needs at least 2 kinds, whole-number counts from 0 to 500, and at least one count above 0. The page draws a bar graph, then asks which kind had the most and how many in all; both must match the kid's own numbers. With `predict:true` a "My guess for the most" box comes first and is required. Kind names can be any short labels up to 20 characters, numbers included, so die faces "1" to "6" work. The page always draws a bar graph from tally input, even when the paper product is a dot plot; say so in the step if the kid will compare the two.
 
 ```js
 {id:"a", t:"tally", predict:true, q:"Type your guess. Then type each color and how many."}
@@ -140,8 +140,9 @@ Minimal examples:
 - `dot` and `dots2`: a tick is drawn at every whole number from min to max (every second one when the span is over 16). Dots are 12 px wide. Keep the span (max − min) at 20 or less, and no more than about 8 dots on one value.
 - Titles: under about 40 characters, or they run off the right edge at 340.
 - A figure that needs to be compared with another (two bar graphs side by side) does not fit. Use `dots2` or two items.
+- Rendered text size. The 340 is drawing units, not screen pixels: the SVG scales down to its container. On a 390 px phone a figure inside a task step renders about 276 px wide, so its 12-unit text is about 9.7 px (12 × 276 / 340) and the 14-unit title about 11.4 px. `phone_audit.py` reports this as "5 figure text shrinks below 11px" for every figure shown in a task step. That finding is known and accepted; do not try to fix it per figure. Keep labels short enough to read at that size.
 
-**Adding a figure kind** (unit 1C of `k7` needs a scatter plot): write a function that returns an SVG string using the classes `ttl`, `mark`, `axis`, `gl` and width `FW()`, add a branch in `figure()`, add an `aria-label`, and check it in `phone_audit.py` screenshots in both color schemes. Text inside figures is 12 px; the audit flags smaller.
+**Adding a figure kind** (unit 1C of `k7` needs a scatter plot): write a function that returns an SVG string using the classes `ttl`, `mark`, `axis`, `gl` and width `FW()`, add a branch in `figure()`, add an `aria-label`, and check it in `phone_audit.py` screenshots in both color schemes. Text inside figures is 12 units of the drawing, not 12 px on a phone (see "Rendered text size" above).
 
 ### Gate
 
@@ -159,6 +160,12 @@ gate:{ id:"g-m1c", title:"Gate 1C", n:10,
 | `extra` | yes (may be `[]`) | Unseen items, `mc` or `num` only, ids `x1`…. All of them appear in every attempt; the rest of the quiz is a random draw from the unit's `mc`/`num` session items. Write 5 or 6. `why` is optional here; in a one-try quiz it only shows after a right answer. |
 | `product` | no | A parent-signed piece of work. `label` names it; `rubric` is an array of short checkable lines (five so far). The kid sees the list on the gate screen; the parent ticks every line in Parent view. |
 
+`product` is used by the second unit of each pair so far (`g-s1b`, `g-m1b`) and is planned for 1C of both tracks. **`k4` Gate 1C has a product**: the first poster from topic 6, signed by a parent. Proposed rubric, in the style of the `g-m1b` lines (a proposal; the owner confirms it before it ships):
+
+```js
+product:{label:"Your first poster", rubric:["States the question","Shows how the data was collected","Graph has a title, labels and a number line from 0","One sentence says what the graph shows","Asks one \"I wonder\" question"]}
+```
+
 The pool (auto-graded session items plus extras) must be at least `n`, or the quiz silently shrinks. Six sessions with two auto-graded items each plus five extras gives 17.
 
 ## Previewing while you write
@@ -171,6 +178,8 @@ The pool (auto-graded session items plus extras) must be at least `n`, or the qu
 ## Shipping a unit whole
 
 Ship a unit only when all its sessions and its gate are written. `position()` sends a kid to the gate as soon as every written session in the unit is done, so a unit with one session and a thin gate would be passed in a day and its test-out would mean nothing. Adding sessions to a unit a kid has already passed does not reopen it for that kid; the new sessions show as skipped. Adding a new unit after the last passed one works with no migration: the kid's Today card moves to its first session.
+
+A partly written unit is for scratch copies of `index.html` only (as in the worked example below). While sessions are missing, the gate pool (the sessions' `mc`/`num` items plus the extras) is under `n`: one session with two auto-graded items and one extra gives a 3-question gate. Never ship a unit whose pool is under `n`; the answer-key helper prints `POOL TOO SMALL`.
 
 ## Content rules learned the hard way
 
@@ -217,11 +226,11 @@ Ship a unit only when all its sessions and its gate are written. `position()` se
 - [ ] No names or identifying details: `grep` per `CLAUDE.md`.
 - [ ] `wins` updated if the unit earns a new "you can now" line.
 - [ ] Figures checked at 340 px in light and dark (`phone_audit.py` screenshots).
-- [ ] Tests updated where they hard-code content: `test_gh.py` asserts 12 `k4` mission cards and exactly 2 "The whole graph is in Data Lab" notes; `walk.py` prints expected totals; `harness.js` and `phone_audit.py` name specific session ids for screenshots.
+- [ ] Tests updated where they hard-code content: `test_gh.py` asserts 12 `k4` mission cards and exactly 2 "The whole graph is in Data Lab" notes; `test_modes.py` asserts 24 sessions in two places (`len(got) == 24` and the iPhone `[data-sid]` count) and 4 gates (`[data-gid]` count), so update all three when sessions or gates are added. `walk.py` holds no expectation: it prints `after reload totals`, and the expected line lives in `TESTING.md`, so update it there. `phone_audit.py` takes screenshots only for session ids listed in inline tuples in `Pass.run` (`if sid in (…): self.shot(f'{sid}_task…')`, `…_task_step…`, `…_check`, `…_check_answered`, `…_done`): add the new session ids to the task, task-step and check tuples so the new screens are captured. `harness.js` does the same with arrays (`audit("task-"+id)`, `audit("check-"+id)`); add ids there if the simulator harness will be run.
 - [ ] All tests pass (`TESTING.md`), then a second reviewer and a phone audit, before the unit ships.
-- [ ] `CURRICULUM.md` tables updated.
+- [ ] Every place that repeats content counts is updated: `CLAUDE.md` (track session ranges, current state); `CURRICULUM.md` (unit tables, the opening count, the calendar, minute sums); `TESTING.md` (expected `after reload totals`, "24 sessions and 4 gates"); `PEDAGOGY.md` (the per-track minute totals in the review table); rule 7 above (trial totals); and the worked example below, which becomes real content once shipped and must be replaced with a new example.
 
-Answer-key helper. It loads the content section in Node and prints every auto-graded item so the keys can be checked by eye and by code. Adjust the line range if the content section has moved (it runs from the `CODAP_MAMMALS` constant to the `};` that closes `TRACKS`).
+Answer-key helper. It loads the content section in Node and prints every auto-graded item so the keys can be checked by eye and by code. It cuts the content section by pattern, from the `const CODAP_MAMMALS` line to the line before the `HELPERS` banner comment, so it needs no line numbers.
 
 ```sh
 awk '/^const CODAP_MAMMALS/,/^\/\* =+ HELPERS/' index.html | sed '$d' > /tmp/content.js
@@ -270,15 +279,17 @@ Why it is shaped this way:
 - `needs` names the coin, so the Today card and the mission card say so.
 - A 10/10 tie is fine: the page accepts either kind as "the most".
 
-Where it goes. Replace the outlined unit with a written one (the gate is required; five or six extras when the unit is complete):
+Where it goes. Replace the outlined unit with a written one (the gate is required; five or six extras when the unit is complete; this gate has a parent-signed product, the poster):
 
 ```js
 { id:"m1c", title:"Unit 1C: Fair or not?", sessions:[
    /* the m13 object above, then m14 … m18 */
-  ], gate:{ id:"g-m1c", title:"Gate 1C", n:10, extra:[
+  ], gate:{ id:"g-m1c", title:"Gate 1C", n:10,
+     product:{ /* the poster product and rubric from the Gate section; owner confirms the lines */ },
+     extra:[
    {id:"x1", t:"num", q:"A coin was flipped 30 times. It landed on tails 14 times. How many times did it land on heads?", a:16}
    /* x2 … x5 */
   ]}}
 ```
 
-Then add `{after:"m13", label:"Test a guess with a coin"}` to `TRACKS.k4.wins` if the unit should announce it, update the tests listed in the checklist (13 mission cards), and run everything in `TESTING.md`.
+Then add `{after:"m13", label:"Test a guess with a coin"}` to `TRACKS.k4.wins` if the unit should announce it, update the tests and counts listed in the checklist (13 mission cards, 13 `k4` sessions, 25 in `test_modes.py`), and run everything in `TESTING.md`.
