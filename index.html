@@ -147,6 +147,19 @@ details summary{min-height:44px; display:flex; align-items:center; cursor:pointe
 .timer{flex:none}
 .reactpad, button{touch-action:manipulation}
 .reactpad{-webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+.trybar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; background:var(--warn-bg); color:var(--warn); border-radius:10px; padding:8px 12px; font-size:14.5px; font-weight:700}
+.quiet{background:none; border:1px solid var(--line); border-radius:999px; padding:8px 14px; min-height:40px; font:inherit; font-size:14px; color:var(--muted); cursor:pointer}
+.trybar .quiet{color:var(--ink); background:var(--card)}
+.quietrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; border-top:1px dashed var(--line); padding-top:12px; margin-top:6px}
+.trytrack{--accent:var(--accent-s); --tint:var(--tint-s)}
+.trytrack.tone-m{--accent:var(--accent-m); --tint:var(--tint-m)}
+.trytrack{border-top:4px solid var(--accent)}
+.trylist{display:flex; flex-direction:column; gap:8px}
+.trybtn{display:flex; justify-content:space-between; gap:10px; align-items:center; width:100%; min-height:44px; text-align:left; background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; color:var(--ink); cursor:pointer}
+.trybtn:hover{border-color:var(--accent)}
+.trybtn.gate{background:var(--tint)}
+.trybtn span:last-child{flex:none; font-size:13px; color:var(--muted)}
+.tryentry{display:flex; gap:12px; flex-wrap:wrap; align-items:center; border:1.5px dashed var(--line); border-radius:12px; padding:12px 14px}
 @media (max-width:520px){
   nav button{padding:8px 10px; font-size:13px}
   .brand small{display:none}
@@ -220,7 +233,7 @@ k7:{ wins:[{after:"s01", label:"Run an experiment on yourself and graph it"},{af
             "In your notebook, mark these four columns C or N: Diet, Mass, Habitat, Sleep."],
      check:[
       {id:"a", t:"mc", q:"Which of these is categorical data?", opts:["Height in centimeters","Favorite sport","Minutes of homework","Number of siblings"], a:1, why:"A favorite sport is a group, not an amount."},
-      {id:"b", t:"mc", q:"A zip code like 19143 is made of digits. Which kind of data is it?", opts:["Numeric, because it is made of digits","Categorical, because it names a place and an average zip code means nothing","Neither"], a:1, why:"Digits used as a label are still a label."},
+      {id:"b", t:"mc", q:"A zip code like 90210 is made of digits. Which kind of data is it?", opts:["Numeric, because it is made of digits","Categorical, because it names a place and an average zip code means nothing","Neither"], a:1, why:"Digits used as a label are still a label."},
       {id:"c", t:"mc", q:"You want to show how many mammals eat plants, meat, or both. Which graph fits?", opts:["A bar chart of Diet","A dot plot of LifeSpan","A dot plot of Mass"], a:0, why:"Counts in each group call for a bar chart."}
      ]},
    { id:"s05", title:"Questions data can answer", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
@@ -581,7 +594,7 @@ const Store = {
   },
   get(k){ if(!this.data[k]) this.data[k] = Object.assign(this.blank(), this.local(k) || {}); return this.data[k]; },
   reset(k){ const e = (this.get(k).epoch||0) + 1; this.adopt(k, Object.assign(this.blank(), {epoch:e})); this.save(k); },
-  adopt(k, next){ const d = this.get(k); if(next === d) return d; for(const key of Object.keys(d)) delete d[key]; Object.assign(d, next); return d; },   // in place, so views holding a reference stay valid
+  adopt(k, next){ const d = this.get(k); if(next === d) return d; if(KIDS[k] && (next.epoch||0) !== (d.epoch||0)) WIP.clear(k); for(const key of Object.keys(d)) delete d[key]; Object.assign(d, next); return d; },   // in place, so views holding a reference stay valid
   async pull(k){
     let cloud = null, ok = false;
     if(this.db){
@@ -616,6 +629,37 @@ const Store = {
   },
   save(k){ const d = this.get(k); d.ts = Date.now(); this.localOk = this.setLocal(k, d); if(!this.db) this.mode = this.localOk ? "device" : "none"; this.push(k); renderSync(); }
 };
+
+/* ============================== UNFINISHED SESSION (this device only) ==============================
+   A small note of where a kid stopped, so a session can be put down and picked up later.
+   It lives in localStorage under datalab:wip:<kid>. It is never part of a Store doc and never synced. */
+const WIP = {
+  MAX_AGE: 14*24*3600*1000,
+  key(kid){ return "datalab:wip:"+kid; },
+  clear(kid){ try{ localStorage.removeItem(this.key(kid)); }catch(e){} },
+  set(kid, w){ try{ localStorage.setItem(this.key(kid), JSON.stringify(w)); }catch(e){} },
+  get(kid){
+    let w = null; try{ w = JSON.parse(localStorage.getItem(this.key(kid)) || "null"); }catch(e){ w = null; }
+    if(!w) return null;
+    const p = position(kid);
+    const ok = typeof w.sid==="string" && (w.stage==="task" || w.stage==="check") && typeof w.t==="number" && Date.now()-w.t <= this.MAX_AGE && p.kind==="session" && p.session.id===w.sid;
+    if(!ok){ this.clear(kid); return null; }
+    return w;
+  }
+};
+function activeMin(v){ return (v.base||0) + (v.started ? Math.max(0, Date.now()-v.started)/60000 : 0); }   // minutes worked so far, across sittings
+function isReal(v){ return !!v && v.name==="session" && !v.practice && !v.tryout && !!v.sid; }
+function wipSave(v){
+  if(!isReal(v) || (v.stage!=="task" && v.stage!=="check")) return;
+  WIP.set(v.kid, {sid:v.sid, stage:v.stage, stepIdx:v.stepIdx||0, card:!!v.card, startedAt:v.startedAt||Date.now(), minutesSoFar:Math.round(activeMin(v)*100)/100, t:Date.now()});
+}
+function wipLine(kid, w){
+  const f = findSession(kid, w.sid); if(!f) return "";
+  const s = f.session;
+  if(w.stage==="check") return s.check[0].t==="react" ? "You stopped at the experiment." : "You stopped at the quick check.";
+  if(KIDS[kid].age < 10) return "You stopped at step "+(Math.min(w.stepIdx||0, s.steps.length-1)+1)+" of "+s.steps.length+".";
+  return "You stopped partway through the steps.";
+}
 
 const AI = { sample:null, tts:null,
   async connect(){
@@ -794,7 +838,7 @@ function renderItem(kid, sid, item, done, opts){
   }
   else if(item.t==="txt"){
     const ta = el("textarea", {id:"t-"+sid+"-"+item.id, "aria-label":"Your answer", maxlength:"900"});
-    const prev = ((Store.get(kid).ans[sid]||{})[item.id]||{}).a; if(prev) ta.value = prev;
+    const prev = opts.tryout ? null : ((Store.get(kid).ans[sid]||{})[item.id]||{}).a; if(prev) ta.value = prev;
     const go = el("button", {class:"second", type:"button"}, "Submit");
     let tries = 0;
     go.addEventListener("click", async ()=>{
@@ -808,6 +852,7 @@ function renderItem(kid, sid, item, done, opts){
       ta.disabled = true;
       if(g && g.ok){ fb.className="fb good"; fb.textContent=g.fb; }
       else if(g){ fb.className="fb note"; fb.textContent=g.fb+" Saved. A parent will read this one."; }
+      else if(opts.practice){ fb.className="fb note"; fb.textContent = opts.tryout ? "Not saved. In a real session a parent reads this one." : "Got it. Practice answers are not saved."; }
       else { fb.className="fb note"; fb.textContent="Saved. A parent will read this one."; }
       finish({first, value:{a:text.slice(0,900), ok: g ? g.ok : null, fb: g ? g.fb : ""}});
     });
@@ -896,7 +941,7 @@ function renderItem(kid, sid, item, done, opts){
 const app = document.getElementById("app");
 let VIEW = {name:"home"}, timerId = null;
 function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
-function go(v){ stopTimer(); if(v.name!=="parent" && v.name!=="cards" && typeof parentOpen!=="undefined") parentOpen = false; VIEW = v; render(); window.scrollTo(0,0); }
+function go(v){ stopTimer(); wipSave(VIEW); if(v.name!=="parent" && v.name!=="cards" && typeof parentOpen!=="undefined") parentOpen = false; VIEW = v; render(); window.scrollTo(0,0); }
 function currentKid(){ return VIEW.kid || null; }
 
 function renderSync(){
@@ -912,18 +957,18 @@ function renderSync(){
   else s.textContent = "Checking for saved progress…";
 }
 function renderNav(){
-  const nav = document.getElementById("nav"); const kid = currentKid();
+  const nav = document.getElementById("nav"); const kid = VIEW.tryout ? null : currentKid();   // trying it out is not a kid working
   const mk = (label, v, cur)=> el("button", {type:"button", "aria-current": cur ? "true" : null, onclick:()=>go(v)}, label);
   const kids = [];
   if(kid){ kids.push(mk("Today", {name:"kid", kid}, VIEW.name==="kid"), mk("My path", {name:"path", kid}, VIEW.name==="path")); }
   kids.push(mk("Switch person", {name:"home"}, VIEW.name==="home"), mk("Parent", {name:"parent"}, VIEW.name==="parent"));
   nav.replaceChildren(...kids);
-  document.body.classList.toggle("kid-k4", kid==="k4"); document.body.classList.toggle("in-session", VIEW.name==="session" || VIEW.name==="gate");
+  document.body.classList.toggle("kid-k4", VIEW.kid==="k4"); document.body.classList.toggle("in-session", VIEW.name==="session" || VIEW.name==="gate");
 }
 function render(){
   renderNav(); renderSync();
   const v = VIEW;
-  const node = v.name==="home" ? viewHome() : v.name==="kid" ? viewKid(v.kid) : v.name==="path" ? viewPath(v.kid) : v.name==="session" ? viewSession(v) : v.name==="gate" ? viewGate(v) : v.name==="cards" ? viewCards(v.kid) : v.name==="parent" ? viewParent() : viewHome();
+  const node = v.name==="home" ? viewHome() : v.name==="kid" ? viewKid(v.kid) : v.name==="path" ? viewPath(v.kid) : v.name==="session" ? viewSession(v) : v.name==="gate" ? viewGate(v) : v.name==="cards" ? viewCards(v.kid) : v.name==="parent" ? viewParent() : v.name==="tryout" ? viewTryout(v) : viewHome();
   app.replaceChildren(node);
   try{ const h = v.kid && (v.name==="kid") ? "#"+v.kid : v.name==="parent" ? "#parent" : v.name==="home" ? "" : null; if(h!==null && location.hash!==h) history.replaceState(null, "", h || location.pathname+location.search); }catch(e){}
 }
@@ -944,7 +989,8 @@ function viewHome(){
   return el("div", {class:"stack"},
     el("h1", null, "Who is working today?"),
     el("div", {class:"who"}, cards),
-    el("p", {class:"muted small"}, "One short session at a time. Each one ends with a quick check. Three a week is the goal. More is welcome."));
+    el("p", {class:"muted small"}, "One short session at a time. Each one ends with a quick check. Three a week is the goal. More is welcome."),
+    el("div", {class:"tryentry"}, el("button", {class:"ghost", type:"button", id:"tryopen", onclick:()=>go({name:"tryout"})}, "Grown-ups: try the lessons"), el("span", {class:"small muted"}, "Open any session. Nothing here is saved or counted.")));
 }
 
 function viewKid(kid){
@@ -953,14 +999,15 @@ function viewKid(kid){
   wrap.append(el("div", {class:"row", style:"justify-content:space-between"}, el("h1", null, k.named ? "Hi, "+k.name+"." : "Hi."), el("div", {class:"row"}, pips(Math.min(c.weekN,k.weekly), k.weekly), el("span", {class:"small muted"}, c.weekN+" of "+k.weekly+" this week"))));
   if(c.dayStreak>1 || c.weekStreak>0) wrap.append(el("div", {class:"row"}, c.dayStreak>1 ? el("span", {class:"pill now"}, c.dayStreak+" days in a row") : null, c.weekStreak>0 ? el("span", {class:"pill good"}, c.weekStreak+" week"+(c.weekStreak>1?"s":"")+" on target") : null));
   if(p.kind==="session"){
-    const s = p.session;
+    const s = p.session, wip = WIP.get(kid);
     wrap.append(el("section", {class:"card next stack"},
       el("div", {class:"eyebrow"}, p.unit.title),
       el("h2", null, s.title),
       el("p", {class:"muted"}, s.mins+" minutes. "+(s.needs || k.needs)), (s.link && TOUCH) ? el("p", {class:"small fb note"}, "Do this one on a computer. It uses CODAP, which needs a mouse or trackpad.") : null,
       c.todayN>=1 ? el("p", {class:"small muted"}, c.todayN+" done today. Keep going if you want to.") : null,
-      el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>startSession(kid, s.id)}, c.due ? "Start: warm-up, then session" : "Start session"),
-        
+      wip ? el("p", {class:"fb note", id:"wipline"}, wipLine(kid, wip)) : null,
+      el("div", {class:"row"}, wip ? el("button", {class:"primary", type:"button", onclick:()=>startSession(kid, s.id, false, wip.card, {resume:wip})}, "Keep going") : el("button", {class:"primary", type:"button", onclick:()=>startSession(kid, s.id)}, c.due ? "Start: warm-up, then session" : "Start session"),
+        wip ? el("button", {class:"second", type:"button", style:"min-height:44px", onclick:()=>{ WIP.clear(kid); startSession(kid, s.id); }}, "Start this session over") : null,
         el("button", {class:"ghost", type:"button", onclick:()=>go({name:"gate", kid, gid:p.unit.gate.id})}, "Know this unit already? Take the gate quiz"), k.age<10 ? el("button", {class:"ghost", type:"button", onclick:()=>startSession(kid, s.id, false, true)}, "I did it from my card") : null), k.age<10 ? el("p", {class:"small muted"}, "Did this mission on paper from a printed card? Tap “I did it from my card” to go straight to the check.") : null));
   } else if(p.kind==="gate"){
     const gsx = gateState(kid, p.unit);
@@ -1020,10 +1067,33 @@ function viewPath(kid){
 }
 
 /* ---------------- session ---------------- */
-function startSession(kid, sid, practice, card){
+function startSession(kid, sid, practice, card, opt){
+  opt = opt || {};
   const st = Store.get(kid), t = today();
+  if(opt.resume && !practice){   // pick up where this kid stopped: no warm-up, same stage and step, clock carries on
+    const w = opt.resume, f = findSession(kid, sid);
+    if(f){ go({name:"session", kid, sid, practice:false, stage:w.stage, card:!!w.card, warm:[], stepIdx:Math.max(0, Math.min(w.stepIdx||0, f.session.steps.length-1)), base:Math.max(0, Number(w.minutesSoFar)||0), started:Date.now(), startedAt:w.startedAt||Date.now(), resumed:true, results:{}, chat:[]}); return; }
+  }
   const due = practice ? [] : Object.entries(st.rev).filter(([k,r])=> r.due <= t && itemByKey(kid,k)).sort((a,b)=> a[1].due < b[1].due ? -1 : 1).slice(0, sid ? 3 : 5).map(([k])=>itemByKey(kid,k));
-  go({name:"session", kid, sid, practice:!!practice, stage: due.length ? "warm" : (sid ? (card ? "check" : "task") : "done"), card:!!card, warm:due, started:Date.now(), results:{}, chat:[]});
+  go({name:"session", kid, sid, practice:!!practice, stage: due.length ? "warm" : (sid ? (card ? "check" : "task") : "done"), card:!!card, warm:due, base:0, started:Date.now(), startedAt:Date.now(), tryout:!!opt.tryout, results:{}, chat:[]});
+}
+function tryBar(){ return el("div", {class:"trybar", role:"note"}, el("span", null, "Trying it out. Nothing is saved."), el("button", {class:"quiet", type:"button", onclick:()=>go({name:"tryout"})}, "Back to the list")); }
+function restartSession(v){   // back to step 1, answers from this run dropped, clock at zero. The page rebuilds every widget.
+  WIP.clear(v.kid);
+  v.stage = v.card ? "check" : "task"; v.stepIdx = null; v.results = {}; v.base = 0; v.started = Date.now(); v.startedAt = Date.now(); v.resumed = false;
+  render(); window.scrollTo(0,0);
+}
+function sessionRow(v){
+  const row = el("div", {class:"quietrow"});
+  const idle = ()=> row.replaceChildren(
+    el("button", {class:"quiet", type:"button", onclick:()=>{ wipSave(v); go({name:"kid", kid:v.kid}); }}, "Stop for now"),
+    el("button", {class:"quiet", type:"button", onclick:ask}, "Start over"));
+  const ask = ()=> row.replaceChildren(
+    el("span", {class:"small", style:"flex-basis:100%"}, v.card ? "Start the quick check over? Your answers so far will be cleared." : "Start this session over? You go back to step 1."),
+    el("button", {class:"second", type:"button", style:"min-height:44px", onclick:()=>restartSession(v)}, "Yes, start over"),
+    el("button", {class:"quiet", type:"button", onclick:idle}, "No, keep my place"));
+  idle();
+  return row;
 }
 function showBlock(kid, s){
   if(!s.show) return null;
@@ -1038,7 +1108,7 @@ function viewSession(v){
   if(v.stage==="warm"){
     wrap.append(el("div", {class:"eyebrow"}, "Warm-up"), el("h1", null, "First, "+v.warm.length+" quick question"+(v.warm.length>1?"s":"")+" from before"));
     const card = el("section", {class:"card stack"}); let left = v.warm.length;
-    const nextBtn = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{ if(!s) logReview(kid); Store.save(kid); v.stage = s ? (v.card ? "check" : "task") : "done"; v.started = Date.now(); render(); window.scrollTo(0,0); }}, s ? "On to today's session" : "Done");
+    const nextBtn = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{ if(!s) logReview(kid); Store.save(kid); v.stage = s ? (v.card ? "check" : "task") : "done"; v.base = 0; v.started = Date.now(); v.startedAt = Date.now(); render(); window.scrollTo(0,0); }}, s ? "On to today's session" : "Done");
     v.warm.forEach(w=> card.append(renderItem(kid, "warm", w.item, (res)=>{ const stt = Store.get(kid); stt.stats.rn++; if(res.first) stt.stats.rok++; schedule(kid, w.key, res.first); Store.save(kid); if(--left===0) nextBtn.disabled=false; }, {oneShot:true})));
     wrap.append(card, el("div", null, nextBtn));
     return wrap;
@@ -1046,30 +1116,38 @@ function viewSession(v){
   if(v.stage==="task"){
     const young = KIDS[kid].age < 10;
     const tm = el("div", {class:"timer", "aria-live":"off"}, pad(s.mins)+":00");
-    const tick = ()=>{ const left = s.mins*60 - Math.floor((Date.now()-v.started)/1000); if(left<=0){ tm.textContent="Time"; tm.classList.add("up"); } else tm.textContent = pad(Math.floor(left/60))+":"+pad(left%60); };
+    const tick = ()=>{ const left = s.mins*60 - Math.floor(activeMin(v)*60); if(left<=0){ tm.textContent="Time"; tm.classList.add("up"); } else tm.textContent = pad(Math.floor(left/60))+":"+pad(left%60); };
     stopTimer(); timerId = setInterval(tick, 1000); tick();
-    wrap.append(el("div", {class:"row", style:"justify-content:space-between; flex-wrap:nowrap; align-items:flex-start"}, el("div", {style:"flex:1; min-width:0"}, el("div", {class:"eyebrow"}, found.unit.title + (v.practice ? " · practice" : "")), el("h1", null, s.title)), tm));
+    wrap.append(el("div", {class:"row", style:"justify-content:space-between; flex-wrap:nowrap; align-items:flex-start"}, el("div", {style:"flex:1; min-width:0"}, el("div", {class:"eyebrow"}, found.unit.title + (v.practice && !v.tryout ? " · practice" : "")), el("h1", null, s.title)), tm));
+    if(v.tryout) wrap.prepend(tryBar());
     const ol = el("ol", {class:"steps"});
     if(v.stepIdx==null) v.stepIdx = young ? 0 : s.steps.length-1;
+    wipSave(v);
+    if(v.tryout && young && s.steps.length>1) wrap.append(el("div", null, el("button", {class:"quiet", type:"button", id:"showall", "aria-pressed": v.showAll ? "true" : "false", onclick:()=>{ v.showAll = !v.showAll; v.stepIdx = v.showAll ? s.steps.length-1 : 0; render(); }}, v.showAll ? "Show one step at a time" : "Show all steps")));
     const more = v.stepIdx < s.steps.length-1;
     s.steps.forEach((step,si)=>{ if(si > v.stepIdx) return; const text = typeof step==="string" ? step : step.t; ol.append(el("li", null, el("div", null, el("span", null, text), AI.canSpeak() && young ? el("button", {class:"say", type:"button", onclick:()=>AI.speak(text)}, "Read it to me") : null, (typeof step!=="string" && step.fig) ? figure(step.fig) : null))); });
     const card = el("section", {class:"card stack"}, s.link ? el("div", null, el("a", {class:"link", href:s.link.u, target:"_blank", rel:"noopener"}, s.link.t)) : null, ol);
     { const sb = showBlock(kid, s); if(sb) card.append(sb); }
     wrap.append(card);
     if(more) wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ v.stepIdx++; render(); const pb = document.querySelector("#app button.primary"); if(pb) pb.scrollIntoView({block:"end"}); window.scrollBy(0, 16); }}, "Next step"), el("span", {class:"small muted"}, "Step "+(v.stepIdx+1)+" of "+s.steps.length)));
-    else wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ stopTimer(); v.stage="check"; v.mins = Math.max(1, Math.round((Date.now()-v.started)/60000)); render(); window.scrollTo(0,0); }}, s.check[0].t==="react" ? "Start the experiment" : s.check[0].t==="tally" ? "Next: type my counts" : "I did it. Go to the quick check"), el("span", {class:"small muted"}, "When the timer runs out, finish your thought and move on.")));
+    else wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ stopTimer(); v.stage="check"; render(); window.scrollTo(0,0); }}, s.check[0].t==="react" ? "Start the experiment" : s.check[0].t==="tally" ? "Next: type my counts" : "I did it. Go to the quick check"), el("span", {class:"small muted"}, "When the timer runs out, finish your thought and move on.")));
     if(AI.sample) wrap.append(coachBox(kid, s, v));
+    if(isReal(v)) wrap.append(sessionRow(v));
     return wrap;
   }
   if(v.stage==="check"){
+    if(v.tryout) wrap.append(tryBar());
+    wipSave(v);
     wrap.append(el("div", {class:"eyebrow"}, s.check[0].t==="react" ? "Experiment" : "Quick check"), el("h1", null, s.title));
+    if(v.resumed && isReal(v)){ const typed = Object.values(Store.get(kid).ans[s.id]||{}).some(x=>x && typeof x.a==="string"); wrap.append(el("p", {class:"small muted", id:"resumeline"}, typed ? "Your typed answers are still here. Answer the rest again." : "Welcome back. Answer these again from the top.")); }
     const card = el("section", {class:"card stack"}); let left = s.check.length;
     if(v.card){ const sb = showBlock(kid, s); if(sb) card.append(sb); }
-    const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>finishSession(v, s)}, v.practice ? "Finish practice" : "Finish session");
+    const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>finishSession(v, s)}, v.tryout ? "Finish" : v.practice ? "Finish practice" : "Finish session");
     const gateRest = s.check[0].t==="react", nodes = [];
-    s.check.forEach((it, idx)=>{ const nd = renderItem(kid, s.id, it, (res)=>{ v.results[it.id] = res; if(idx===0 && gateRest) nodes.slice(1).forEach(x=>{ x.style.display = ""; }); if(!v.practice && res && res.value){ const stx = Store.get(kid); stx.ans[s.id] = stx.ans[s.id] || {}; stx.ans[s.id][it.id] = res.value; Store.save(kid); } if(--left===0){ fin.disabled=false; finNote.textContent = ""; } }, {practice:v.practice}); if(idx>0 && gateRest) nd.style.display = "none"; nodes.push(nd); card.append(nd); });
+    s.check.forEach((it, idx)=>{ const nd = renderItem(kid, s.id, it, (res)=>{ v.results[it.id] = res; if(idx===0 && gateRest) nodes.slice(1).forEach(x=>{ x.style.display = ""; }); if(!v.practice && res && res.value){ const stx = Store.get(kid); stx.ans[s.id] = stx.ans[s.id] || {}; stx.ans[s.id][it.id] = res.value; Store.save(kid); } if(--left===0){ fin.disabled=false; finNote.textContent = ""; } }, {practice:v.practice, tryout:v.tryout}); if(idx>0 && gateRest) nd.style.display = "none"; nodes.push(nd); card.append(nd); });
     const finNote = el("span", {class:"small muted"}, "Answer every question to finish.");
     wrap.append(card, el("div", {class:"row"}, fin, finNote));
+    if(isReal(v)) wrap.append(sessionRow(v));
     return wrap;
   }
   // done
@@ -1093,6 +1171,7 @@ const SOLO = ["All by myself","A little help","A grown-up sat with me"], FEEL = 
 function finishSession(v, s){
   const kid = v.kid;
   if(!s.check.every(it=>v.results[it.id])) return;
+  if(v.tryout){ go({name:"tryout", flash:"You tried “"+s.title+"”. Nothing was saved."}); return; }
   if(!v.practice){
     const st = Store.get(kid); let pts = 0, auto = 0; st.ans[s.id] = st.ans[s.id] || {};
     const again = !!st.done[s.id];
@@ -1103,7 +1182,9 @@ function finishSession(v, s){
       if(r.interests) st.interests = r.interests;
     }
     const w = (TRACKS[kid].wins||[]).find(x=>x.after===s.id); if(w && !st.done[s.id]) v.newWin = w.label;
-    st.done[s.id] = {t:Date.now(), first:pts, auto, mins:v.mins||s.mins}; if(v.card) st.done[s.id].card = 1;
+    const mins = v.card ? s.mins : Math.min(3*s.mins, Math.max(1, Math.round(activeMin(v))));   // all the minutes worked, across sittings; a card run was timed on paper
+    st.done[s.id] = {t:Date.now(), first:pts, auto, mins}; if(v.card) st.done[s.id].card = 1;
+    WIP.clear(kid);
     if(!again) st.log.push({d:today(), sid:s.id});
     Store.save(kid);
   }
@@ -1128,18 +1209,27 @@ function coachBox(kid, s, v){
 }
 
 /* ---------------- gate ---------------- */
+function makeQuiz(u, n){ const all = autoItems(u), fresh = all.filter(i=>!i.sid), seen = shuffle(all.filter(i=>i.sid)); return {items: shuffle([...fresh, ...seen.slice(0, Math.max(0, n-fresh.length))]).slice(0, n), res:{}}; }
 function viewGate(v){
   const kid = v.kid, f = findGate(kid, v.gid), u = f.unit, g = f.gate, gx = gateState(kid, u), st = Store.get(kid);
-  const wrap = el("div", {class:"stack"}, el("div", {class:"eyebrow"}, u.title), el("h1", null, g.title));
+  const wrap = el("div", {class:"stack"}, v.tryout ? tryBar() : null, el("div", {class:"eyebrow"}, u.title), el("h1", null, g.title));
+  if(v.tryout && !v.quiz && !v.justScored) v.quiz = makeQuiz(u, gx.n);
   if(v.quiz){
     const q = v.quiz; const card = el("section", {class:"card stack"}); let left = q.items.length;
     const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{
       const score = q.items.filter(it=>q.res[it.key]).length; const missed = [...new Set(q.items.filter(it=>!q.res[it.key] && it.sid).map(it=>it.sid))];
+      if(v.tryout){ v.quiz = null; v.justScored = {score, n:q.items.length, missed}; render(); window.scrollTo(0,0); return; }   // no score, tries or pass recorded
       const gs = st.gates[g.id] = st.gates[g.id] || {}; gs.quiz = {best: Math.max((gs.quiz||{}).best||0, score), last:score, n:q.items.length, t:Date.now(), d:today(), tries:((gs.quiz||{}).tries||0)+1, missed};
       Store.save(kid); v.quiz = null; v.justScored = {score, n:q.items.length, missed}; render(); window.scrollTo(0,0);
     }}, "See my score");
     q.items.forEach(it=> card.append(renderItem(kid, "gate", it.item, (res)=>{ q.res[it.key] = !!res.first; if(--left===0) fin.disabled=false; }, {oneShot:true})));
     wrap.append(el("p", {class:"muted"}, "One try per question. You need "+gx.need+" of "+gx.n+"."), card, el("div", null, fin));
+    return wrap;
+  }
+  if(v.tryout){
+    const j = v.justScored;
+    wrap.append(el("section", {class:"card stack"}, el("h2", null, j.score+" of "+j.n), el("p", {class:"fb note"}, "A kid needs "+gx.need+" of "+gx.n+" to pass. This try was not saved."),
+      el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"tryout", flash:"You tried the "+g.title+" quiz. Nothing was saved."})}, "Back to the list"))));
     return wrap;
   }
   if(v.justScored){
@@ -1150,7 +1240,7 @@ function viewGate(v){
   wrap.append(el("section", {class:"card stack"},
     el("div", {class:"row", style:"justify-content:space-between"}, el("h3", null, "1. Quiz"), el("span", {class:"pill "+(gx.quizOk?"good":"warn")}, gx.quizOk ? "Passed" : "Need "+gx.need+" of "+gx.n)),
     el("p", {class:"muted small"}, gx.n+" questions. Some are new, some come from the sessions. Best so far: "+((gx.gs.quiz||{}).best||0)+"."),
-    gx.quizOk ? null : el("div", null, el("button", {class:"primary", type:"button", onclick:()=>{ v.justScored=null; const all = autoItems(u), fresh = all.filter(i=>!i.sid), seen = shuffle(all.filter(i=>i.sid)); v.quiz = {items: shuffle([...fresh, ...seen.slice(0, Math.max(0, gx.n-fresh.length))]).slice(0, gx.n), res:{}}; render(); window.scrollTo(0,0); }}, (gx.gs.quiz ? "Try the quiz again" : "Start the quiz")))));
+    gx.quizOk ? null : el("div", null, el("button", {class:"primary", type:"button", onclick:()=>{ v.justScored=null; v.quiz = makeQuiz(u, gx.n); render(); window.scrollTo(0,0); }}, (gx.gs.quiz ? "Try the quiz again" : "Start the quiz")))));
   if(g.product){
     wrap.append(el("section", {class:"card stack"},
       el("div", {class:"row", style:"justify-content:space-between"}, el("h3", null, "2. Project"), el("span", {class:"pill "+(gx.prodOk?"good":"warn")}, gx.prodOk ? "Signed off" : "Needs a parent")),
@@ -1158,6 +1248,26 @@ function viewGate(v){
   }
   if(gx.quizOk && !gx.prodOk) wrap.append(el("section", {class:"card next stack"}, el("h2", null, "Quiz passed."), el("p", null, "Next: show your project to a parent. They sign it off in the Parent view."), el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"kid", kid})}, "Back to today"))));
   if(gx.passed) wrap.append(el("section", {class:"card next stack"}, el("h2", null, "Gate passed."), el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"kid", kid})}, "Back to today"))));
+  return wrap;
+}
+
+/* ---------------- try the lessons (grown-ups) ---------------- */
+// Every written session and gate quiz, both tracks, nothing locked. Runs in practice mode: nothing is saved, counted or synced.
+function viewTryout(v){
+  const wrap = el("div", {class:"stack"}, el("div", {class:"eyebrow"}, "For grown-ups"), el("h1", null, "Try the lessons"),
+    el("p", {class:"muted"}, "Open any session. Nothing here is saved or counted."),
+    v.flash ? el("p", {class:"fb good", role:"status", id:"tryflash"}, v.flash) : null);
+  for(const kid of Object.keys(KIDS)){
+    const k = KIDS[kid], sec = el("section", {class:"card stack trytrack tone-"+k.tone, "data-kid":kid}, el("h2", null, k.name), k.named ? el("p", {class:"small muted"}, k.dflt+" track") : null);
+    for(const u of unitsOf(kid)){ if(u.planned || !u.sessions) continue;
+      const list = el("div", {class:"trylist"});
+      for(const s of u.sessions) list.append(el("button", {class:"trybtn", type:"button", "data-sid":s.id, onclick:()=>startSession(kid, s.id, true, false, {tryout:true})}, el("span", null, s.title), el("span", null, s.mins+" min")));
+      if(u.gate) list.append(el("button", {class:"trybtn gate", type:"button", "data-gid":u.gate.id, onclick:()=>go({name:"gate", kid, gid:u.gate.id, tryout:true})}, el("span", null, u.gate.title+" quiz"), el("span", null, Math.min(u.gate.n, autoItems(u).length)+" questions")));
+      sec.append(el("h3", null, u.title), list);
+    }
+    wrap.append(sec);
+  }
+  wrap.append(el("div", null, el("button", {class:"ghost", type:"button", onclick:()=>go({name:"home"})}, "Back")));
   return wrap;
 }
 
@@ -1193,7 +1303,7 @@ function viewParent(){
         el("div", {class:"kpi"}, el("b", null, c.weekN+" / "+KIDS[kid].weekly), el("span", null, "sessions this week")),
         el("div", {class:"kpi"}, el("b", null, String(last28)), el("span", null, "sessions, last 4 weeks")),
         el("div", {class:"kpi"}, el("b", null, String(c.weekStreak)), el("span", null, "weeks in a row on target")),
-        el("div", {class:"kpi"}, el("b", null, pctf), el("span", null, "exit checks right first try")),
+        el("div", {class:"kpi"}, el("b", null, pctf), el("span", null, "quick checks right first try")),
         el("div", {class:"kpi"}, el("b", null, pctr), el("span", null, "review questions right")),
         el("div", {class:"kpi"}, el("b", null, c.total+" / "+c.authored), el("span", null, "sessions done"+(c.skipped ? " ("+c.skipped+" more skipped by test-out)" : ""))),
         el("div", {class:"kpi"}, el("b", null, solo[0]+" / "+(solo[0]+solo[1]+solo[2])), el("span", null, "done alone, by the kid's own report"))),
@@ -1226,7 +1336,7 @@ function viewParent(){
     }
     const eraseBox = el("div", {class:"row"});
     const eraseBtn = el("button", {class:"ghost", type:"button", onclick:()=>{ eraseBox.replaceChildren(el("span", {class:"small"}, "Erase all of "+KIDS[kid].name+"'s progress on every device? This cannot be undone."), el("button", {class:"second", type:"button", onclick:()=>{ Store.reset(kid); render(); }}, "Yes, erase"), el("button", {class:"ghost", type:"button", onclick:()=>render()}, "Cancel")); }}, "Erase "+KIDS[kid].name+"'s progress");
-    eraseBox.append(eraseBtn, el("span", {class:"small muted"}, "Use this after you have tried the sessions yourself."));
+    eraseBox.append(eraseBtn, el("span", {class:"small muted"}, "This wipes sessions, answers and gates on every device. To explore without saving, use Try the lessons on the home screen."));
     sec.append(el("div", {class:"row"}, el("button", {class:"second", type:"button", onclick:()=>go({name:"cards", kid})}, "Print "+KIDS[kid].name+"'s mission cards"), el("span", {class:"small muted"}, "Paper first. The screen is only for the check at the end.")));
     sec.append(eraseBox);
     wrap.append(sec);
@@ -1301,6 +1411,10 @@ function viewCards(kid){
     if(changed && (VIEW.name==="home" || VIEW.name==="kid" || VIEW.name==="path" || VIEW.name==="parent")) render();
   });
   AI.connect().then(()=>{ if(VIEW.name==="session" && VIEW.stage==="task") render(); });
+  const park = ()=>{ const v = VIEW; if(v.name!=="session" || !v.started) return; v.base = activeMin(v); v.started = null; wipSave(v); };   // time away from the page is not counted
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="hidden") park(); else if(VIEW.name==="session" && !VIEW.started && VIEW.stage!=="warm" && VIEW.stage!=="done") VIEW.started = Date.now(); });
+  window.addEventListener("pagehide", park);
+  window.addEventListener("pageshow", ()=>{ if(VIEW.name==="session" && !VIEW.started && VIEW.stage!=="warm" && VIEW.stage!=="done") VIEW.started = Date.now(); });
   const retryFailed = ()=>{ if(Store.db && Store.err!==401) for(const k of Object.keys(Store.fail)) Store.push(k); };
   window.addEventListener("online", retryFailed); setInterval(retryFailed, 60000);
   document.addEventListener("visibilitychange", async ()=>{
