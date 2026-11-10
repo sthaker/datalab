@@ -99,6 +99,7 @@ ol.steps>li::before{content:counter(s); font-family:var(--display); font-weight:
 .fb.bad{background:var(--bad-bg); color:var(--bad)}
 .fb.note{background:var(--warn-bg); color:var(--warn)}
 input[type=number], input[type=text], input[type=password], textarea, select{font:inherit; color:var(--ink); background:var(--card); border:1.5px solid var(--line); border-radius:8px; padding:8px 10px}
+select{min-height:44px; max-width:100%; font-size:max(16px, 1em)}   /* native picker kept; 44 px phone tap target, 16 px or more so iOS does not zoom */
 textarea{width:100%; min-height:90px; resize:vertical}
 input[type=number]{width:110px}
 .fig{overflow-x:auto; margin:10px 0 2px}
@@ -305,14 +306,14 @@ k7:{ wins:[{after:"s01", label:"Run an experiment on yourself and graph it"},{af
       {id:"b", t:"mc", q:"A distribution is strongly skewed and has outliers. You want to describe a typical value and how spread out most values are. Which pair fits?", opts:["Mean and range","Median and IQR"], a:1, why:"They are not dragged around by a few extreme values."},
       {id:"c", t:"txt", q:"Name one outlier you found: the animal, the column, and whether you think it is a mistake, real, or impossible to tell. Give your reason.", rubric:"Names an animal and a column, and gives a judgment (mistake, real, or cannot tell without checking the source) with a reason."}
      ]},
-   { id:"s11", title:"Your data, analyzed", mins:20, link:{t:"Open a blank CODAP document", u:CODAP_NEW}, show:{from:"s01.a", kind:"react"},
-     steps:["Use your 7-day log if it has at least 5 days. If it does not, use your reaction times from session 1, listed below. Either one works.",
+   { id:"s11", title:"Your data, analyzed", mins:20, link:{t:"Open a blank CODAP document", u:CODAP_NEW}, show:{from:"s01.a", kind:"react"}, collect:{from:"s01.a"},
+     steps:["Use your 7-day log if it has at least 5 days. If it does not, use your reaction times from session 1, listed below. If no times are listed, do the reaction-time test below first. Either kind of data works.",
             "In CODAP, click Tables and choose New. Type in your column names and your rows.",
             "Make a dot plot for each numeric column. Use Measure (the ruler), then Measures of Center, to show the median.",
             "Pick your most interesting graph. Take a screenshot of it now. You need it next session.",
-            "Compare the median with what you predicted."],
+            "Compare with your prediction. Log: the median of one column against the typical value you predicted when you started the log. Reaction times: which hand had the lower median, and whether that is the hand you predicted."],
      check:[
-      {id:"a", t:"txt", q:"Pick one column. Give what you predicted and the actual median.", rubric:"Names one column or measure, a predicted value and an actual median from the data."},
+      {id:"a", t:"txt", q:"Answer for the data you used. Log: name one column, the typical value you predicted, and the actual median, with units. Reaction times: give the median for each hand and say whether that matches your prediction.", rubric:"Accept either kind of data. Log: names one column, gives the predicted typical value and the actual median, with units (hours or minutes). Reaction times: gives a median for each hand in milliseconds and says whether the faster hand matches the prediction (right hand, left hand, or no real difference). Either one passes."},
       {id:"b", t:"mc", q:"Your data covers a short time for one person. What can you conclude from it?", opts:["How all 7th graders would come out","What happened for you during the time you measured","Nothing at all"], a:1, why:"The data describes what it measured: you, that week."}
      ]},
    { id:"s12", title:"Write your data story", mins:20,
@@ -504,6 +505,25 @@ function weekStart(s){ const d = new Date(s+"T12:00:00"); const wd = (d.getDay()
 function shuffle(a){ const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; }
 function withTimeout(p, ms){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms))]); }
 function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+// Two stored versions of one unfinished answer item: the later edit time `u` wins; without times (older saves),
+// the larger JSON text wins. Arbitrary but the same in either merge order, so every device converges.
+function ansPick(x, y){
+  if(x==null) return y; if(y==null) return x;
+  const ux = typeof x.u==="number" ? x.u : -1, uy = typeof y.u==="number" ? y.u : -1;
+  if(ux !== uy) return ux > uy ? x : y;
+  return JSON.stringify(x) >= JSON.stringify(y) ? x : y;
+}
+// The log counts each session once, on its earliest completion date, and at most one review per day.
+// Two offline devices finishing the same session on different dates must not count it twice.
+function normLog(log){
+  const first = {}, reviews = new Set(), out = [];
+  for(const e of (log||[])){ if(!e || typeof e.d!=="string") continue;
+    if(e.sid==="review") reviews.add(e.d);
+    else if(!first[e.sid] || e.d < first[e.sid]) first[e.sid] = e.d; }
+  for(const sid of Object.keys(first)) out.push({d:first[sid], sid});
+  for(const d of reviews) out.push({d, sid:"review"});
+  return out.sort((p,q)=> p.d<q.d ? -1 : p.d>q.d ? 1 : p.sid<q.sid ? -1 : p.sid>q.sid ? 1 : 0);
+}
 
 /* ---- content lookups ---- */
 function unitsOf(kid){ return TRACKS[kid].phases.flatMap(p=>p.units.map(u=>Object.assign({phase:p}, u))); }
@@ -573,7 +593,14 @@ const Store = {
       const w = pick((a.done||{})[k], (b.done||{})[k], "t"); o.done[k] = w;
       const src = (w === (a.done||{})[k]) ? a : b; const an = (src.ans||{})[k] || (a.ans||{})[k] || (b.ans||{})[k]; if(an) o.ans[k] = an;
     }
-    for(const k of new Set([...Object.keys(a.ans||{}), ...Object.keys(b.ans||{})])) if(!o.ans[k]) o.ans[k] = (a.ans||{})[k] || (b.ans||{})[k];
+    // answers for a session neither side has finished: merge item by item, so two devices' different items both survive.
+    // Only older saves and data collected in place (s11's reaction-time step) reach here; drafts now stay in the WIP note until Finish.
+    for(const k of new Set([...Object.keys(a.ans||{}), ...Object.keys(b.ans||{})])){
+      if(o.done[k]) continue;
+      const x = (a.ans||{})[k] || {}, y = (b.ans||{})[k] || {}, m = {};
+      for(const id of new Set([...Object.keys(x), ...Object.keys(y)])) m[id] = ansPick(x[id], y[id]);
+      o.ans[k] = m;
+    }
     for(const k of new Set([...Object.keys(a.rev||{}), ...Object.keys(b.rev||{})])) o.rev[k] = pick((a.rev||{})[k], (b.rev||{})[k], "u");
     for(const k of new Set([...Object.keys(a.gates||{}), ...Object.keys(b.gates||{})])){
       const x = (a.gates||{})[k] || {}, y = (b.gates||{})[k] || {};
@@ -583,8 +610,7 @@ const Store = {
       if(x.sign || y.sign) g.sign = pick(x.sign, y.sign, "t");
       o.gates[k] = g;
     }
-    const seen = new Set(); for(const e of [...(a.log||[]), ...(b.log||[])]){ const key = e.d+"|"+e.sid; if(!seen.has(key)){ seen.add(key); o.log.push(e); } }
-    o.log.sort((p,q)=> p.d<q.d ? -1 : p.d>q.d ? 1 : 0);
+    o.log = normLog([...(a.log||[]), ...(b.log||[])]);
     o.interests = [...new Set([...(a.interests||[]), ...(b.interests||[])])];
     for(const f of ["fn","fok","rn","rok"]) o.stats[f] = Math.max((a.stats||{})[f]||0, (b.stats||{})[f]||0);
     if(a.code || b.code) o.code = (a.ts||0) >= (b.ts||0) ? (a.code || b.code) : (b.code || a.code);
@@ -594,7 +620,7 @@ const Store = {
   },
   get(k){ if(!this.data[k]) this.data[k] = Object.assign(this.blank(), this.local(k) || {}); return this.data[k]; },
   reset(k){ const e = (this.get(k).epoch||0) + 1; this.adopt(k, Object.assign(this.blank(), {epoch:e})); this.save(k); },
-  adopt(k, next){ const d = this.get(k); if(next === d) return d; if(KIDS[k] && (next.epoch||0) !== (d.epoch||0)) WIP.clear(k); for(const key of Object.keys(d)) delete d[key]; Object.assign(d, next); return d; },   // in place, so views holding a reference stay valid
+  adopt(k, next){ const d = this.get(k); if(next === d) return d; const erased = KIDS[k] && (next.epoch||0) !== (d.epoch||0); if(erased) WIP.clear(k); for(const key of Object.keys(d)) delete d[key]; Object.assign(d, next); if(erased) epochChanged(k); return d; },   // in place, so views holding a reference stay valid
   async pull(k){
     let cloud = null, ok = false;
     if(this.db){
@@ -642,16 +668,23 @@ const WIP = {
     let w = null; try{ w = JSON.parse(localStorage.getItem(this.key(kid)) || "null"); }catch(e){ w = null; }
     if(!w) return null;
     const p = position(kid);
-    const ok = typeof w.sid==="string" && (w.stage==="task" || w.stage==="check") && typeof w.t==="number" && Date.now()-w.t <= this.MAX_AGE && p.kind==="session" && p.session.id===w.sid;
+    const ok = typeof w.sid==="string" && (w.stage==="task" || w.stage==="check") && typeof w.t==="number" && Date.now()-w.t <= this.MAX_AGE && p.kind==="session" && p.session.id===w.sid
+      && (w.epoch==null || w.epoch===(Store.get(kid).epoch||0));   // a note written before epochs were recorded has none; accept it
     if(!ok){ this.clear(kid); return null; }
     return w;
   }
 };
 function activeMin(v){ return (v.base||0) + (v.started ? Math.max(0, Date.now()-v.started)/60000 : 0); }   // minutes worked so far, across sittings
 function isReal(v){ return !!v && v.name==="session" && !v.practice && !v.tryout && !!v.sid; }
+function newAtt(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+function epochOf(kid){ return Store.get(kid).epoch||0; }
+// A run of a session or gate belongs to the epoch it started in and, for sessions, to one attempt id.
+// Every handler that writes progress checks both, so a button or grade from before an Erase or a Start over writes nothing.
+function liveRun(v, att){ return VIEW===v && v.epoch===epochOf(v.kid) && (att===undefined || v.att===att); }
 function wipSave(v){
   if(!isReal(v) || (v.stage!=="task" && v.stage!=="check")) return;
-  WIP.set(v.kid, {sid:v.sid, stage:v.stage, stepIdx:v.stepIdx||0, card:!!v.card, startedAt:v.startedAt||Date.now(), minutesSoFar:Math.round(activeMin(v)*100)/100, t:Date.now()});
+  if(v.epoch!==epochOf(v.kid)) return;   // erased elsewhere: never write a note for the old record
+  WIP.set(v.kid, {sid:v.sid, stage:v.stage, stepIdx:v.stepIdx||0, card:!!v.card, startedAt:v.startedAt||Date.now(), minutesSoFar:Math.round(activeMin(v)*100)/100, t:Date.now(), att:v.att, epoch:v.epoch, drafts:v.drafts||{}});
 }
 function wipLine(kid, w){
   const f = findSession(kid, w.sid); if(!f) return "";
@@ -661,7 +694,7 @@ function wipLine(kid, w){
   return "You stopped partway through the steps.";
 }
 
-const AI = { sample:null, tts:null,
+const AI = { sample:null, tts:null, GRADE_MS:20000,
   async connect(){
     try{ if(window.claude && typeof window.claude.use==="function"){ this.sample = await window.claude.use("sample"); } }catch(e){ this.sample = null; }
     try{ if(window.claude && typeof window.claude.use==="function"){ this.tts = await window.claude.use("tts"); } }catch(e){ this.tts = null; }
@@ -679,7 +712,10 @@ const AI = { sample:null, tts:null,
       + "Be encouraging and generous. Pass any honest attempt that has what is asked for. Ignore spelling and grammar. "
       + "If something required is missing, do not pass it, and say what kind of thing to add. Never write the answer or an example answer for the student.\n"
       + "Reply with only JSON: {\"ok\": true or false, \"fb\": \"one or two short sentences spoken to the student"+(k.age<10?", in simple words":"")+"\"}";
-    try{ const r = await this.sample(p, {modelTier:"quick"}); const m = /\{[\s\S]*\}/.exec((r && r.text) || ""); if(!m) return null; const j = JSON.parse(m[0]); return {ok: !!j.ok, fb: String(j.fb||"").slice(0,300)}; }
+    // Anything but {ok: true|false, fb: "text"} goes to a parent. A request that never settles gives up after 20 s, so Submit cannot stay disabled.
+    try{ const r = await withTimeout(this.sample(p, {modelTier:"quick"}), this.GRADE_MS); const m = /\{[\s\S]*\}/.exec((r && r.text) || ""); if(!m) return null; const j = JSON.parse(m[0]);
+      if(!j || typeof j.ok!=="boolean" || typeof j.fb!=="string" || !j.fb.trim()) return null;
+      return {ok: j.ok, fb: j.fb.trim().slice(0,300)}; }
     catch(e){ return null; }
   },
   async coach(kid, session, history, question){
@@ -771,13 +807,13 @@ function position(kid){
 }
 function counts(kid){
   const st = Store.get(kid), t = today(), ws = weekStart(t), we = addDays(ws, 6), goal = KIDS[kid].weekly;
-  const real = st.log.filter(e=>e.sid!=="review");
+  const log = normLog(st.log), real = log.filter(e=>e.sid!=="review");
   const todayN = real.filter(e=>e.d===t).length;
   const weekN = real.filter(e=>e.d>=ws && e.d<=we).length;
   let total = 0, skipped = 0, authored = 0, fa = 0, fo = 0;
   for(const u of unitsOf(kid)){ if(!u.sessions) continue; const passed = gateState(kid, u).passed; for(const x of u.sessions){ authored++; const d = st.done[x.id]; if(d){ total++; fa += d.auto||0; fo += d.first||0; } else if(passed) skipped++; } }
   const due = Object.entries(st.rev).filter(([k,r])=> r.due <= t && itemByKey(kid,k)).length;
-  const days = new Set(st.log.map(e=>e.d));
+  const days = new Set(log.map(e=>e.d));
   let dayStreak = 0, d = days.has(t) ? t : addDays(t,-1);
   while(days.has(d)){ dayStreak++; d = addDays(d,-1); }
   const perWeek = {}; real.forEach(e=>{ const w = weekStart(e.d); perWeek[w] = (perWeek[w]||0)+1; });
@@ -838,7 +874,7 @@ function renderItem(kid, sid, item, done, opts){
   }
   else if(item.t==="txt"){
     const ta = el("textarea", {id:"t-"+sid+"-"+item.id, "aria-label":"Your answer", maxlength:"900"});
-    const prev = opts.tryout ? null : ((Store.get(kid).ans[sid]||{})[item.id]||{}).a; if(prev) ta.value = prev;
+    const prev = opts.draft && typeof opts.draft.a==="string" ? opts.draft.a : null; if(prev) ta.value = prev;   // only this attempt's own draft, never a saved answer
     const go = el("button", {class:"second", type:"button"}, "Submit");
     let tries = 0;
     go.addEventListener("click", async ()=>{
@@ -875,8 +911,19 @@ function renderItem(kid, sid, item, done, opts){
     const go = el("button", {class:"second", type:"button", onclick:()=>{
       if(resolved) return;
       if(guess && !guess.value.trim()){ fb.className="fb bad"; fb.textContent="Type your guess first."; return; }
-      const cats=[], vals=[]; rows.forEach(([nm,ct])=>{ const n = Number(ct.value); if(nm.value.trim() && ct.value!=="" && Number.isInteger(n) && n>=0 && n<=500){ cats.push(nm.value.trim().slice(0,20)); vals.push(n); } });
-      if(cats.length < 2 || Math.max(...vals) < 1){ fb.className="fb bad"; fb.textContent="Fill in at least 2 kinds, each with a whole-number count. At least one count must be more than 0."; return; }
+      // A completely blank row is skipped. Any row that is started needs a name and a whole-number count from 0 to 500.
+      const cats=[], vals=[]; let bad = null;
+      rows.forEach(([nm,ct])=>{ nm.removeAttribute("aria-invalid"); ct.removeAttribute("aria-invalid"); });
+      rows.forEach(([nm,ct], i)=>{ if(bad) return;
+        const name = nm.value.trim(), raw = ct.value.trim(), badInput = ct.validity && ct.validity.badInput;
+        if(!name && raw==="" && !badInput) return;
+        const n = Number(raw);
+        if(!name){ bad = {inp:nm, msg:"Row "+(i+1)+" has a count but no name. Type what you counted."}; return; }
+        if(raw==="" || badInput){ bad = {inp:ct, msg:"Row "+(i+1)+" ("+name+") needs a count."}; return; }
+        if(!Number.isInteger(n) || n<0 || n>500){ bad = {inp:ct, msg:"Row "+(i+1)+" ("+name+"): the count must be a whole number from 0 to 500."}; return; }
+        cats.push(name.slice(0,20)); vals.push(n); });
+      if(bad){ out.replaceChildren(); bad.inp.setAttribute("aria-invalid", "true"); fb.className="fb bad"; fb.textContent=bad.msg; bad.inp.focus(); return; }
+      if(cats.length < 2 || Math.max(...vals) < 1){ out.replaceChildren(); fb.className="fb bad"; fb.textContent="Fill in at least 2 kinds, each with a whole-number count. At least one count must be more than 0."; return; }
       fb.className=""; fb.textContent="";
       out.replaceChildren(figure({k:"bar", title:"What I counted", cats, vals}));
       const max = Math.max(...vals), sum = vals.reduce((a,b)=>a+b,0);
@@ -892,6 +939,8 @@ function renderItem(kid, sid, item, done, opts){
       }}, "Check");
       out.append(el("div", {class:"stack", style:"margin-top:10px"}, el("label", {for:"ts-"+sid}, "Which kind had the most? ", sel), el("label", {for:"tt-"+sid}, "How many did you count in all? ", tot), el("div", null, chk), fb2));
     }}, "Draw my graph");
+    // Changing a name or count after drawing removes the old graph and its questions, so the check always grades what is on screen.
+    rows.forEach(r=>r.forEach(x=>x.addEventListener("input", ()=>{ if(!resolved && out.firstChild){ out.replaceChildren(); fb.className="fb note"; fb.textContent="You changed your counts. Draw the graph again."; } })));
     box.append(grid, el("div", {class:"row", style:"margin-top:10px"}, go), fb, out);
   }
   else if(item.t==="react"){
@@ -943,6 +992,14 @@ let VIEW = {name:"home"}, timerId = null;
 function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
 function go(v){ stopTimer(); wipSave(VIEW); if(v.name!=="parent" && v.name!=="cards" && typeof parentOpen!=="undefined") parentOpen = false; VIEW = v; render(); window.scrollTo(0,0); }
 function currentKid(){ return VIEW.kid || null; }
+// Another device (or this one) erased a kid's progress. A session or gate in progress for that kid belonged to the old record:
+// drop it and go to Today, without go()'s save of the outgoing view. Tryout runs are not a kid's record and stay put.
+function epochChanged(kid){
+  const v = VIEW;
+  if(v.kid!==kid || v.tryout || (v.name!=="session" && v.name!=="gate")) return;
+  stopTimer(); WIP.clear(kid);
+  VIEW = {name:"kid", kid, flash:"A parent cleared your progress, so that session was stopped. Start fresh from here."}; render(); window.scrollTo(0,0);
+}
 
 function renderSync(){
   const s = document.getElementById("sync"); if(!s) return;
@@ -996,6 +1053,7 @@ function viewHome(){
 function viewKid(kid){
   const k = KIDS[kid], st = Store.get(kid), c = counts(kid), p = position(kid);
   const wrap = el("div", {class:"stack"});
+  if(VIEW.flash && VIEW.kid===kid) wrap.append(el("p", {class:"fb note", role:"status", id:"kidflash"}, VIEW.flash));
   wrap.append(el("div", {class:"row", style:"justify-content:space-between"}, el("h1", null, k.named ? "Hi, "+k.name+"." : "Hi."), el("div", {class:"row"}, pips(Math.min(c.weekN,k.weekly), k.weekly), el("span", {class:"small muted"}, c.weekN+" of "+k.weekly+" this week"))));
   if(c.dayStreak>1 || c.weekStreak>0) wrap.append(el("div", {class:"row"}, c.dayStreak>1 ? el("span", {class:"pill now"}, c.dayStreak+" days in a row") : null, c.weekStreak>0 ? el("span", {class:"pill good"}, c.weekStreak+" week"+(c.weekStreak>1?"s":"")+" on target") : null));
   if(p.kind==="session"){
@@ -1072,15 +1130,17 @@ function startSession(kid, sid, practice, card, opt){
   const st = Store.get(kid), t = today();
   if(opt.resume && !practice){   // pick up where this kid stopped: no warm-up, same stage and step, clock carries on
     const w = opt.resume, f = findSession(kid, sid);
-    if(f){ go({name:"session", kid, sid, practice:false, stage:w.stage, card:!!w.card, warm:[], stepIdx:Math.max(0, Math.min(w.stepIdx||0, f.session.steps.length-1)), base:Math.max(0, Number(w.minutesSoFar)||0), started:Date.now(), startedAt:w.startedAt||Date.now(), resumed:true, results:{}, chat:[]}); return; }
+    // Drafts come back from the note. A note from before drafts were kept there imports the session's old saved answers once.
+    const drafts = (w.drafts && typeof w.drafts==="object") ? w.drafts : (!st.done[sid] && st.ans[sid] ? JSON.parse(JSON.stringify(st.ans[sid])) : {});
+    if(f){ go({name:"session", kid, sid, practice:false, stage:w.stage, card:!!w.card, warm:[], stepIdx:Math.max(0, Math.min(w.stepIdx||0, f.session.steps.length-1)), base:Math.max(0, Number(w.minutesSoFar)||0), started:Date.now(), startedAt:w.startedAt||Date.now(), resumed:true, results:{}, chat:[], att:w.att||newAtt(), epoch:epochOf(kid), drafts}); return; }
   }
   const due = practice ? [] : Object.entries(st.rev).filter(([k,r])=> r.due <= t && itemByKey(kid,k)).sort((a,b)=> a[1].due < b[1].due ? -1 : 1).slice(0, sid ? 3 : 5).map(([k])=>itemByKey(kid,k));
-  go({name:"session", kid, sid, practice:!!practice, stage: due.length ? "warm" : (sid ? (card ? "check" : "task") : "done"), card:!!card, warm:due, base:0, started:Date.now(), startedAt:Date.now(), tryout:!!opt.tryout, results:{}, chat:[]});
+  go({name:"session", kid, sid, practice:!!practice, stage: due.length ? "warm" : (sid ? (card ? "check" : "task") : "done"), card:!!card, warm:due, base:0, started:Date.now(), startedAt:Date.now(), tryout:!!opt.tryout, results:{}, chat:[], att:newAtt(), epoch:epochOf(kid), drafts:{}});
 }
 function tryBar(){ return el("div", {class:"trybar", role:"note"}, el("span", null, "Trying it out. Nothing is saved."), el("button", {class:"quiet", type:"button", onclick:()=>go({name:"tryout"})}, "Back to the list")); }
 function restartSession(v){   // back to step 1, answers from this run dropped, clock at zero. The page rebuilds every widget.
   WIP.clear(v.kid);
-  v.stage = v.card ? "check" : "task"; v.stepIdx = null; v.results = {}; v.base = 0; v.started = Date.now(); v.startedAt = Date.now(); v.resumed = false;
+  v.stage = v.card ? "check" : "task"; v.stepIdx = null; v.results = {}; v.drafts = {}; v.att = newAtt(); v.base = 0; v.started = Date.now(); v.startedAt = Date.now(); v.resumed = false;   // a new attempt: late callbacks from the old one write nothing
   render(); window.scrollTo(0,0);
 }
 function sessionRow(v){
@@ -1102,14 +1162,29 @@ function showBlock(kid, s){
   if(val && s.show.kind==="react" && val.right) return el("div", {class:"small"}, el("b", null, "Your reaction times from session 1, in milliseconds"), el("p", null, "Right: "+val.right.join(", ")), el("p", null, "Left: "+val.left.join(", ")));
   return null;
 }
+// collect:{from:"sid.itemId"}: when the data a session builds on was never collected (a unit passed by test-out, say),
+// run that one item here and store its value under the source session. It does not finish or credit the source session.
+function collectBlock(kid, s, v){
+  if(!s.collect) return null;
+  const [src, iid] = s.collect.from.split("."), have = (Store.get(kid).ans[src]||{})[iid];
+  if(have) return null;
+  const f = findSession(kid, src), item = f && f.session.check.find(c=>c.id===iid); if(!item) return null;
+  const att = v.att, real = isReal(v);
+  const node = renderItem(kid, src, item, (res)=>{
+    if(!real || !liveRun(v, att) || !res || !res.value) return;
+    const st = Store.get(kid); st.ans[src] = st.ans[src] || {}; st.ans[src][iid] = Object.assign({}, res.value, {u:Date.now()}); Store.save(kid);
+    setTimeout(()=>{ if(liveRun(v, att) && v.stage==="task") render(); }, 1200);   // show the saved data in the list above
+  }, {practice:!real, tryout:v.tryout});
+  return el("div", {class:"stack", id:"collect"}, el("p", {class:"fb note"}, "No reaction times are saved yet. If your log has fewer than 5 days, do the reaction-time test here first. It takes about 3 minutes and does not count as a session."), node);
+}
 function viewSession(v){
   const kid = v.kid, found = v.sid ? findSession(kid, v.sid) : null, s = found && found.session;
   const wrap = el("div", {class:"stack"});
   if(v.stage==="warm"){
     wrap.append(el("div", {class:"eyebrow"}, "Warm-up"), el("h1", null, "First, "+v.warm.length+" quick question"+(v.warm.length>1?"s":"")+" from before"));
     const card = el("section", {class:"card stack"}); let left = v.warm.length;
-    const nextBtn = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{ if(!s) logReview(kid); Store.save(kid); v.stage = s ? (v.card ? "check" : "task") : "done"; v.base = 0; v.started = Date.now(); v.startedAt = Date.now(); render(); window.scrollTo(0,0); }}, s ? "On to today's session" : "Done");
-    v.warm.forEach(w=> card.append(renderItem(kid, "warm", w.item, (res)=>{ const stt = Store.get(kid); stt.stats.rn++; if(res.first) stt.stats.rok++; schedule(kid, w.key, res.first); Store.save(kid); if(--left===0) nextBtn.disabled=false; }, {oneShot:true})));
+    const nextBtn = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{ if(!liveRun(v)) return; if(!s) logReview(kid); Store.save(kid); v.stage = s ? (v.card ? "check" : "task") : "done"; v.base = 0; v.started = Date.now(); v.startedAt = Date.now(); render(); window.scrollTo(0,0); }}, s ? "On to today's session" : "Done");
+    v.warm.forEach(w=> card.append(renderItem(kid, "warm", w.item, (res)=>{ if(!liveRun(v)) return; const stt = Store.get(kid); stt.stats.rn++; if(res.first) stt.stats.rok++; schedule(kid, w.key, res.first); Store.save(kid); if(--left===0) nextBtn.disabled=false; }, {oneShot:true})));
     wrap.append(card, el("div", null, nextBtn));
     return wrap;
   }
@@ -1128,6 +1203,7 @@ function viewSession(v){
     s.steps.forEach((step,si)=>{ if(si > v.stepIdx) return; const text = typeof step==="string" ? step : step.t; ol.append(el("li", null, el("div", null, el("span", null, text), AI.canSpeak() && young ? el("button", {class:"say", type:"button", onclick:()=>AI.speak(text)}, "Read it to me") : null, (typeof step!=="string" && step.fig) ? figure(step.fig) : null))); });
     const card = el("section", {class:"card stack"}, s.link ? el("div", null, el("a", {class:"link", href:s.link.u, target:"_blank", rel:"noopener"}, s.link.t)) : null, ol);
     { const sb = showBlock(kid, s); if(sb) card.append(sb); }
+    { const cb = collectBlock(kid, s, v); if(cb) card.append(cb); }
     wrap.append(card);
     if(more) wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ v.stepIdx++; render(); const pb = document.querySelector("#app button.primary"); if(pb) pb.scrollIntoView({block:"end"}); window.scrollBy(0, 16); }}, "Next step"), el("span", {class:"small muted"}, "Step "+(v.stepIdx+1)+" of "+s.steps.length)));
     else wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ stopTimer(); v.stage="check"; render(); window.scrollTo(0,0); }}, s.check[0].t==="react" ? "Start the experiment" : s.check[0].t==="tally" ? "Next: type my counts" : "I did it. Go to the quick check"), el("span", {class:"small muted"}, "When the timer runs out, finish your thought and move on.")));
@@ -1139,12 +1215,14 @@ function viewSession(v){
     if(v.tryout) wrap.append(tryBar());
     wipSave(v);
     wrap.append(el("div", {class:"eyebrow"}, s.check[0].t==="react" ? "Experiment" : "Quick check"), el("h1", null, s.title));
-    if(v.resumed && isReal(v)){ const typed = Object.values(Store.get(kid).ans[s.id]||{}).some(x=>x && typeof x.a==="string"); wrap.append(el("p", {class:"small muted", id:"resumeline"}, typed ? "Your typed answers are still here. Answer the rest again." : "Welcome back. Answer these again from the top.")); }
+    if(v.resumed && isReal(v)){ const typed = Object.values(v.drafts||{}).some(x=>x && typeof x.a==="string"); wrap.append(el("p", {class:"small muted", id:"resumeline"}, typed ? "Your typed answers are still here. Answer the rest again." : "Welcome back. Answer these again from the top.")); }
     const card = el("section", {class:"card stack"}); let left = s.check.length;
     if(v.card){ const sb = showBlock(kid, s); if(sb) card.append(sb); }
-    const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>finishSession(v, s)}, v.tryout ? "Finish" : v.practice ? "Finish practice" : "Finish session");
+    const att = v.att;   // this render's attempt; a Start over or an Erase makes every handler below inert
+    const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{ if(liveRun(v, att)) finishSession(v, s); }}, v.tryout ? "Finish" : v.practice ? "Finish practice" : "Finish session");
     const gateRest = s.check[0].t==="react", nodes = [];
-    s.check.forEach((it, idx)=>{ const nd = renderItem(kid, s.id, it, (res)=>{ v.results[it.id] = res; if(idx===0 && gateRest) nodes.slice(1).forEach(x=>{ x.style.display = ""; }); if(!v.practice && res && res.value){ const stx = Store.get(kid); stx.ans[s.id] = stx.ans[s.id] || {}; stx.ans[s.id][it.id] = res.value; Store.save(kid); } if(--left===0){ fin.disabled=false; finNote.textContent = ""; } }, {practice:v.practice, tryout:v.tryout}); if(idx>0 && gateRest) nd.style.display = "none"; nodes.push(nd); card.append(nd); });
+    // A resolved answer is a draft of this attempt: kept in the device-only note until Finish commits all of them together.
+    s.check.forEach((it, idx)=>{ const nd = renderItem(kid, s.id, it, (res)=>{ if(!liveRun(v, att)) return; v.results[it.id] = res; if(idx===0 && gateRest) nodes.slice(1).forEach(x=>{ x.style.display = ""; }); if(isReal(v) && res && res.value){ v.drafts = v.drafts || {}; v.drafts[it.id] = res.value; wipSave(v); } if(--left===0){ fin.disabled=false; finNote.textContent = ""; } }, {practice:v.practice, tryout:v.tryout, draft: isReal(v) ? (v.drafts||{})[it.id] : null}); if(idx>0 && gateRest) nd.style.display = "none"; nodes.push(nd); card.append(nd); });
     const finNote = el("span", {class:"small muted"}, "Answer every question to finish.");
     wrap.append(card, el("div", {class:"row"}, fin, finNote));
     if(isReal(v)) wrap.append(sessionRow(v));
@@ -1164,23 +1242,25 @@ function viewSession(v){
 }
 function selfReport(kid, sid){
   const st = Store.get(kid), d = st.done[sid]; if(!d) return null;
-  const rowOf = (label, field, opts)=>{ const chips = el("div", {class:"chips", style:"margin-top:4px"}); opts.forEach((o,i)=>{ const b = el("button", {type:"button", "aria-pressed": d[field]===i ? "true" : "false", onclick:()=>{ d[field] = i; Store.save(kid); chips.querySelectorAll("button").forEach((x,xi)=>x.setAttribute("aria-pressed", xi===i ? "true" : "false")); }}, o); chips.append(b); }); return el("div", null, el("span", {class:"small muted"}, label), chips); };
+  const rowOf = (label, field, opts)=>{ const chips = el("div", {class:"chips", style:"margin-top:4px"}); opts.forEach((o,i)=>{ const b = el("button", {type:"button", "aria-pressed": d[field]===i ? "true" : "false", onclick:()=>{ if(Store.get(kid).done[sid]!==d) return; d[field] = i; Store.save(kid); chips.querySelectorAll("button").forEach((x,xi)=>x.setAttribute("aria-pressed", xi===i ? "true" : "false")); }}, o); chips.append(b); }); return el("div", null, el("span", {class:"small muted"}, label), chips); };
   return el("div", {class:"stack"}, rowOf("Did you do it by yourself?", "solo", SOLO), rowOf("How was it?", "feel", FEEL));
 }
 const SOLO = ["All by myself","A little help","A grown-up sat with me"], FEEL = ["Fun","Fine","Boring","Too hard"];
 function finishSession(v, s){
   const kid = v.kid;
   if(!s.check.every(it=>v.results[it.id])) return;
+  if(!liveRun(v)) return;   // erased since this run began: the old run writes nothing
   if(v.tryout){ go({name:"tryout", flash:"You tried “"+s.title+"”. Nothing was saved."}); return; }
   if(!v.practice){
-    const st = Store.get(kid); let pts = 0, auto = 0; st.ans[s.id] = st.ans[s.id] || {};
+    const st = Store.get(kid); let pts = 0, auto = 0; const fresh = {};
     const again = !!st.done[s.id];
     for(const it of s.check){
       const r = v.results[it.id] || {};
       if(it.t==="mc" || it.t==="num"){ auto++; st.stats.fn++; if(r.first){ pts++; st.stats.fok++; } schedule(kid, s.id+"."+it.id, !!r.first); }
-      if(r.value) st.ans[s.id][it.id] = r.value;
+      if(r.value) fresh[it.id] = r.value;
       if(r.interests) st.interests = r.interests;
     }
+    if(Object.keys(fresh).length || st.ans[s.id]) st.ans[s.id] = fresh;   // this attempt's answers, together; older partial saves are replaced
     const w = (TRACKS[kid].wins||[]).find(x=>x.after===s.id); if(w && !st.done[s.id]) v.newWin = w.label;
     const mins = v.card ? s.mins : Math.min(3*s.mins, Math.max(1, Math.round(activeMin(v))));   // all the minutes worked, across sittings; a card run was timed on paper
     st.done[s.id] = {t:Date.now(), first:pts, auto, mins}; if(v.card) st.done[s.id].card = 1;
@@ -1212,6 +1292,7 @@ function coachBox(kid, s, v){
 function makeQuiz(u, n){ const all = autoItems(u), fresh = all.filter(i=>!i.sid), seen = shuffle(all.filter(i=>i.sid)); return {items: shuffle([...fresh, ...seen.slice(0, Math.max(0, n-fresh.length))]).slice(0, n), res:{}}; }
 function viewGate(v){
   const kid = v.kid, f = findGate(kid, v.gid), u = f.unit, g = f.gate, gx = gateState(kid, u), st = Store.get(kid);
+  if(v.epoch==null) v.epoch = epochOf(kid);   // a gate run belongs to the record it started in
   const wrap = el("div", {class:"stack"}, v.tryout ? tryBar() : null, el("div", {class:"eyebrow"}, u.title), el("h1", null, g.title));
   if(v.tryout && !v.quiz && !v.justScored) v.quiz = makeQuiz(u, gx.n);
   if(v.quiz){
@@ -1219,6 +1300,7 @@ function viewGate(v){
     const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{
       const score = q.items.filter(it=>q.res[it.key]).length; const missed = [...new Set(q.items.filter(it=>!q.res[it.key] && it.sid).map(it=>it.sid))];
       if(v.tryout){ v.quiz = null; v.justScored = {score, n:q.items.length, missed}; render(); window.scrollTo(0,0); return; }   // no score, tries or pass recorded
+      if(!liveRun(v)) return;   // erased since the quiz began
       const gs = st.gates[g.id] = st.gates[g.id] || {}; gs.quiz = {best: Math.max((gs.quiz||{}).best||0, score), last:score, n:q.items.length, t:Date.now(), d:today(), tries:((gs.quiz||{}).tries||0)+1, missed};
       Store.save(kid); v.quiz = null; v.justScored = {score, n:q.items.length, missed}; render(); window.scrollTo(0,0);
     }}, "See my score");
@@ -1295,7 +1377,7 @@ function viewParent(){
         el("button", {class:"second", type:"button", onclick:()=>{ ps.names = {}; for(const kk of Object.keys(nmIn)){ const val = nmIn[kk].value.trim(); if(val) ps.names[kk] = val; } Store.save("parent"); render(); }}, "Save names")))); }
   for(const kid of Object.keys(KIDS)){
     const st = Store.get(kid), c = counts(kid), p = position(kid), t = today();
-    const last28 = st.log.filter(e=> e.d >= addDays(t,-27) && e.sid!=="review").length;
+    const last28 = normLog(st.log).filter(e=> e.d >= addDays(t,-27) && e.sid!=="review").length;
     const pctf = c.firstAuto ? Math.round(100*c.firstOk/c.firstAuto)+"%" : "–", pctr = st.stats.rn ? Math.round(100*st.stats.rok/st.stats.rn)+"%" : "–";
     const dn = Object.values(st.done), solo = SOLO.map((_,i)=>dn.filter(x=>x.solo===i).length), feel = FEEL.map((_,i)=>dn.filter(x=>x.feel===i).length);
     const sec = el("section", {class:"card stack"}, el("h2", null, KIDS[kid].name),
