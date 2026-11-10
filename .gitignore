@@ -1,0 +1,6 @@
+tests/*.png
+tests/out/
+tests/phone_shots/
+tests/phone_audit_report.json
+test.html
+__pycache__/
