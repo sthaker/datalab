@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Data Lab Mission Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: one 720px column on graph paper. The next session is the only loud element on the page. */
+  --bg:#f2f4ef; --grid:#e4e8df; --card:#ffffff; --ink:#172033; --muted:#566074; --line:#d5dbd0;
+  --accent-s:#1b6a86; --tint-s:#e0eef3; --accent-m:#8a3a78; --tint-m:#f4e4f0;
+  --accent:var(--accent-s); --tint:var(--tint-s); --on-accent:#ffffff;
+  --good:#2b7a4b; --good-bg:#e2f2e7; --warn:#a05f00; --warn-bg:#fbf0d9; --bad:#b0362e; --bad-bg:#f9e4e1;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif; --body:"Lexend",Verdana,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#11161c; --grid:#1a212a; --card:#1a222c; --ink:#e8ecf1; --muted:#9aa5b5; --line:#2e3946;
+    --accent-s:#5fb4d1; --tint-s:#17303a; --accent-m:#d48cc3; --tint-m:#35202f; --on-accent:#0d1217;
+    --good:#6cc48d; --good-bg:#173323; --warn:#e0a94a; --warn-bg:#3a2c10; --bad:#ef8a80; --bad-bg:#3d1c19;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#11161c; --grid:#1a212a; --card:#1a222c; --ink:#e8ecf1; --muted:#9aa5b5; --line:#2e3946;
+  --accent-s:#5fb4d1; --tint-s:#17303a; --accent-m:#d48cc3; --tint-m:#35202f; --on-accent:#0d1217;
+  --good:#6cc48d; --good-bg:#173323; --warn:#e0a94a; --warn-bg:#3a2c10; --bad:#ef8a80; --bad-bg:#3d1c19;
+}
+body.kid-k4{ --accent:var(--accent-m); --tint:var(--tint-m); }
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--bg);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+  color:var(--ink); font-family:var(--body); font-size:16.5px; line-height:1.55;
+}
+.wrap{max-width:720px; margin:0 auto; padding:0 16px 64px}
+header.bar{display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px 0 10px}
+.brand{font-family:var(--display); font-weight:800; font-size:22px; letter-spacing:-.01em}
+.brand small{font-family:var(--body); font-weight:400; font-size:13px; color:var(--muted); margin-left:8px}
+nav{margin-left:auto; display:flex; gap:6px; flex-wrap:wrap}
+nav button, .ghost{background:none; border:1px solid var(--line); color:var(--ink); border-radius:999px; padding:10px 14px; min-height:44px; font:inherit; font-size:14px; cursor:pointer}
+nav button[aria-current="true"]{background:var(--ink); color:var(--bg); border-color:var(--ink)}
+.sync{font-size:13px; color:var(--muted); padding:0 0 10px}
+.sync b{font-weight:700}
+.sync.warn{color:var(--warn)}
+h1,h2,h3{font-family:var(--display); letter-spacing:-.01em; text-wrap:balance; margin:0}
+h1{font-size:30px; line-height:1.15; font-weight:800}
+h2{font-size:21px; font-weight:800}
+h3{font-size:17px; font-weight:600}
+p{margin:0}
+.stack{display:flex; flex-direction:column; gap:14px}
+.row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+.card{background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px}
+.card.next{border:2px solid var(--accent); box-shadow:6px 6px 0 var(--tint)}
+.eyebrow{font-size:13px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:.06em}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+button.primary{background:var(--accent); color:var(--on-accent); border:0; border-radius:10px; padding:12px 18px; font:inherit; font-weight:700; cursor:pointer}
+button.primary[disabled]{opacity:.45; cursor:not-allowed}
+button.second{background:var(--tint); color:var(--ink); border:1px solid var(--line); border-radius:10px; padding:10px 14px; font:inherit; cursor:pointer}
+a.link{display:inline-block; background:var(--tint); color:var(--ink); border:1px solid var(--accent); border-radius:10px; padding:10px 14px; font-weight:700; text-decoration:none}
+a.link::after{content:" ↗"}
+button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+.who{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+@media (max-width:520px){ .who{grid-template-columns:1fr} }
+.who button{all:unset; cursor:pointer; display:block; background:var(--card); border:2px solid var(--line); border-radius:14px; padding:18px}
+.who button:hover{border-color:var(--ink)}
+.who .nm{font-family:var(--display); font-weight:800; font-size:28px}
+.pips{display:flex; gap:6px; align-items:center}
+.pip{width:14px; height:14px; border-radius:50%; border:2px solid var(--accent)}
+.pip.on{background:var(--accent)}
+.bar-outer{height:8px; background:var(--tint); border-radius:8px; overflow:hidden}
+.bar-inner{height:100%; background:var(--accent)}
+.pill{display:inline-block; font-size:12.5px; font-weight:700; border-radius:999px; padding:2px 9px; border:1px solid var(--line); color:var(--muted)}
+.pill.good{background:var(--good-bg); color:var(--good); border-color:transparent}
+.pill.warn{background:var(--warn-bg); color:var(--warn); border-color:transparent}
+.pill.bad{background:var(--bad-bg); color:var(--bad); border-color:transparent}
+.pill.now{background:var(--accent); color:var(--on-accent); border-color:transparent}
+ol.steps{margin:0; padding:0; list-style:none; counter-reset:s; display:flex; flex-direction:column; gap:12px}
+ol.steps>li{counter-increment:s; display:grid; grid-template-columns:34px 1fr; gap:10px; align-items:start}
+ol.steps>li::before{content:counter(s); font-family:var(--display); font-weight:800; width:30px; height:30px; border-radius:50%; background:var(--tint); display:grid; place-items:center; font-size:15px}
+.say{background:none; border:1px solid var(--line); border-radius:8px; padding:8px 12px; min-height:40px; font:inherit; font-size:14px; color:var(--muted); cursor:pointer; margin-left:6px}
+.timer{font-family:var(--display); font-weight:800; font-size:26px; font-variant-numeric:tabular-nums}
+.timer.up{color:var(--warn)}
+.item{border-top:1px solid var(--line); padding-top:14px}
+.item:first-child{border-top:0; padding-top:0}
+.opts{display:flex; flex-direction:column; gap:8px; margin-top:10px}
+.opts button{text-align:left; background:var(--card); border:1.5px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; color:var(--ink); cursor:pointer}
+.opts button:hover:not([disabled]){border-color:var(--accent)}
+.opts button.right{background:var(--good-bg); border-color:var(--good)}
+.opts button.wrong{background:var(--bad-bg); border-color:var(--bad); text-decoration:line-through}
+.fb{margin-top:8px; font-size:15px; padding:8px 10px; border-radius:8px}
+.fb.good{background:var(--good-bg); color:var(--good)}
+.fb.bad{background:var(--bad-bg); color:var(--bad)}
+.fb.note{background:var(--warn-bg); color:var(--warn)}
+input[type=number], input[type=text], input[type=password], textarea, select{font:inherit; color:var(--ink); background:var(--card); border:1.5px solid var(--line); border-radius:8px; padding:8px 10px}
+textarea{width:100%; min-height:90px; resize:vertical}
+input[type=number]{width:110px}
+.fig{overflow-x:auto; margin:10px 0 2px}
+.fig svg{max-width:100%; height:auto; display:block}
+.fig text{font-family:var(--body); fill:var(--muted); font-size:12px}
+.fig .ttl{fill:var(--ink); font-weight:700; font-size:14px}
+.fig .mark{fill:var(--accent)}
+.fig .axis{stroke:var(--muted); stroke-width:1}
+.fig .gl{stroke:var(--line); stroke-width:1}
+.chips{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+.chips button{background:var(--card); border:1.5px solid var(--line); border-radius:999px; padding:6px 12px; font:inherit; color:var(--ink); cursor:pointer}
+.chips button[aria-pressed="true"]{background:var(--accent); color:var(--on-accent); border-color:var(--accent)}
+.path-unit{border-left:3px solid var(--line); padding-left:14px; display:flex; flex-direction:column; gap:6px}
+.path-unit.live{border-left-color:var(--accent)}
+.srow{display:flex; gap:10px; align-items:center; justify-content:space-between; padding:6px 0; border-bottom:1px dashed var(--line); font-size:15.5px}
+.srow button{all:unset; cursor:pointer; text-decoration:underline; text-underline-offset:3px; min-height:40px; display:inline-flex; align-items:center}
+.planned{border:1.5px dashed var(--line); border-radius:12px; padding:14px; background:transparent}
+table{border-collapse:collapse; width:100%; font-size:15px}
+th,td{text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+td.num, th.num{text-align:right; font-variant-numeric:tabular-nums}
+.kpis{display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:10px}
+.kpi{background:var(--tint); border-radius:10px; padding:10px 12px}
+.kpi b{display:block; font-family:var(--display); font-size:24px; font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px; color:var(--muted)}
+.tally-grid{display:grid; grid-template-columns:1fr 120px; gap:8px; margin-top:10px; max-width:360px}
+.reactpad{display:block; width:100%; min-height:150px; border-radius:12px; border:2px solid var(--line); font:inherit; font-size:20px; font-weight:700; cursor:pointer; color:var(--ink); background:var(--tint)}
+.reactpad.go{background:var(--good); color:var(--on-accent); border-color:var(--good)}
+.chat{display:flex; flex-direction:column; gap:8px; margin-top:10px}
+.chat .me{align-self:flex-end; background:var(--tint); border-radius:10px 10px 2px 10px; padding:8px 10px; max-width:85%}
+.chat .co{align-self:flex-start; border:1px solid var(--line); border-radius:10px 10px 10px 2px; padding:8px 10px; max-width:85%}
+details summary{cursor:pointer; font-weight:700}
+@media (prefers-reduced-motion: no-preference){ .bar-inner{transition:width .4s} }
+.mcard{break-inside:avoid; page-break-inside:avoid}
+@media print{
+  body{background:#fff !important; color:#000}
+  header, #sync, .noprint{display:none !important}
+  .card{box-shadow:none !important; border:1.5px solid #000 !important; background:#fff !important}
+  .mcard{margin:0 0 12px}
+  .shell, main{max-width:none !important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <div class="brand">Data Lab<small>mission control</small></div>
+    <nav id="nav" aria-label="Views"></nav>
+  </header>
+  <div class="sync" id="sync">Checking for saved progress…</div>
+  <main id="app"></main>
+</div>
+<script>
+"use strict";
+/* ============================== CONTENT ============================== */
+const CODAP_MAMMALS = "https://codap.concord.org/app/static/dg/en/cert/index.html#file=examples:Mammals";
+const CODAP_NEW = "https://codap.concord.org/app/";
+const NYT_GRAPH = "https://www.nytimes.com/column/whats-going-on-in-this-graph";
+
+const MONTH_DAYS = {k:"bar", title:"Days in each month", cats:["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"], vals:[31,28,31,30,31,30,31,31,30,31,30,31]};
+const CONTINENTS = {k:"bar", title:"Letters in each continent's name", cats:["Africa","Antarctica","Asia","Australia","Europe","N. America","S. America"], vals:[6,10,4,9,6,12,12]};
+
+const KIDS = {
+  k7:{ dflt:"Seventh grader", tone:"s", age:12, weekly:3, needs:"A computer with a mouse or trackpad, and your notebook." },
+  k4:{ dflt:"Fourth grader", tone:"m", age:9, weekly:3, needs:"Your data notebook and a pencil." }
+};
+
+const TRACKS = {
+k7:{ wins:[{after:"s01", label:"Run an experiment on yourself and graph it"},{after:"s02", label:"Make a graph from a table of data"},{after:"s06", label:"Compare two groups with dot plots"},{after:"s08", label:"Find a median and a mean, and say which one to trust"},{after:"s12", label:"Tell a data story about your own week"}], phases:[
+ { n:1, title:"See", when:"About 18 sessions", blurb:"Run a small experiment, read graphs, describe a distribution, and analyze a week of your own data.", units:[
+  { id:"s1a", title:"Unit 1A: Reading data", sessions:[
+   { id:"s01", title:"Which hand is faster?", mins:12,
+     steps:["Today you run an experiment on yourself. Question: is one of your hands faster than the other?",
+            "Decide your prediction now, before you collect any data.",
+            "Go to the exit check. You will click a box the moment it turns green: 8 tries with your right hand, then 8 with your left.",
+            "The page graphs every click. Then you say what the data shows."],
+     check:[
+      {id:"a", t:"react", q:"Which hand is faster? Predict, then test it."},
+      {id:"b", t:"mc", q:"In the graph of your clicks, what does one dot stand for?", opts:["One click: one reaction time","One hand","One second","The average of all your clicks"], a:0, why:"Each dot is one measurement."},
+      {id:"c", t:"txt", q:"Was your prediction right? Then name one thing about how this test was run that could make it unfair.", rubric:"Says whether the prediction matched the result, and names one plausible limitation of the test, for example that the right hand always went first, there were only 8 tries, tiredness or practice, or the mouse or trackpad favoring one hand."}
+     ]},
+   { id:"s02", title:"Meet CODAP", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["CODAP is a free tool for exploring tables of data. Open the link. A table of 27 mammals appears, along with three small graphs and a guide. You can ignore the guide and the small graphs for now. If no table appears, reload the page once. If that does not work, stop and tell a parent.",
+            "Click Graph in the toolbar. A new graph of scattered dots appears, usually on the right side.",
+            "Under the new graph, click the words Drag an attribute or click here, then pick Sleep. The dots line up by hours of sleep. Dragging the Sleep column name onto the axis does the same thing.",
+            "Click the dot farthest to the right. Its row lights up in the table.",
+            "Now click the axis name, Sleep (hours), and pick LifeSpan. The same 27 dots rearrange. Switch it back to Sleep."],
+     check:[
+      {id:"a", t:"mc", q:"In the graph you made, what does one dot stand for?", opts:["One hour of sleep","One mammal","One kind of diet","The average of all the mammals"], a:1, why:"Each dot is one case: one row of the table."},
+      {id:"b", t:"txt", q:"Which mammal sleeps the most, and about how many hours? Say how you found it.", rubric:"Names a specific mammal, gives a number of hours, and says how it was found, for example by clicking the dot or sorting the table."}
+     ]},
+   { id:"s03", title:"Start your own data", mins:10,
+     steps:["For the next 7 days you collect data about yourself. Keep it to three numbers a day.",
+            "In your notebook, draw a table with four columns: Day, Sleep, Screens, Moving.",
+            "Sleep is hours of sleep last night, to the nearest half hour. Screens is minutes on a screen for fun, not homework. Moving is minutes of sports or active play.",
+            "Before you log anything, write a prediction for a typical day in each column.",
+            "Fill in a row each evening. A good guess is fine. If you miss a day, leave it blank and keep going."],
+     check:[
+      {id:"a", t:"txt", q:"Type your three predictions: sleep hours, screen minutes and moving minutes on a typical day.", rubric:"Gives three numbers: sleep in hours, screens in minutes and moving in minutes."},
+      {id:"b", t:"mc", q:"Why write a prediction before collecting data?", opts:["So you can change it later","So you can tell whether the data surprised you","Because graphs need one"], a:1, why:"A surprise only counts if you said what you expected first."}
+     ]},
+   { id:"s04", title:"Two kinds of data", mins:12, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["Make a new graph. Click the words under it and pick Diet. The dots fall into groups. Data that sorts things into groups is categorical.",
+            "Now click the axis name, Diet, and pick LifeSpan instead. The dots spread along a number line. Data you can measure or count is numeric.",
+            "Test: would an average make sense? An average life span does. An average diet does not.",
+            "In your notebook, mark these four columns C or N: Diet, Mass, Habitat, Sleep."],
+     check:[
+      {id:"a", t:"mc", q:"Which of these is categorical data?", opts:["Height in centimeters","Favorite sport","Minutes of homework","Number of siblings"], a:1, why:"A favorite sport is a group, not an amount."},
+      {id:"b", t:"mc", q:"A zip code like 19143 is made of digits. Which kind of data is it?", opts:["Numeric, because it is made of digits","Categorical, because it names a place and an average zip code means nothing","Neither"], a:1, why:"Digits used as a label are still a label."},
+      {id:"c", t:"mc", q:"You want to show how many mammals eat plants, meat, or both. Which graph fits?", opts:["A bar chart of Diet","A dot plot of LifeSpan","A dot plot of Mass"], a:0, why:"Counts in each group call for a bar chart."}
+     ]},
+   { id:"s05", title:"Questions data can answer", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["A statistical question is about a group, and the answers vary from one member to the next. You need data to answer it.",
+            "Example: do heavier mammals live longer? To answer it, put Mass on one axis and LifeSpan on the other and look at the pattern.",
+            "In your notebook, write 2 questions of your own about the mammals.",
+            "Pick one and make the graph that answers it."],
+     check:[
+      {id:"a", t:"mc", q:"Which is a statistical question?", opts:["How long did my dog sleep today?","How long do mammals usually sleep?","How many legs does a horse have?","What is 12 × 12?"], a:1, why:"It is about a group, and mammals differ."},
+      {id:"b", t:"mc", q:"Why is \"How tall is my best friend today?\" not a statistical question?", opts:["One measurement answers it, so there is no variation to study","It is about a person","Height changes too slowly"], a:0, why:"A statistical question needs data that varies."},
+      {id:"c", t:"txt", q:"Type your question, which columns you graphed, and what the graph showed.", rubric:"A question about the group of mammals, the column or columns used, and an answer that describes what the graph showed."}
+     ]},
+   { id:"s06", title:"Compare groups", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["Make a graph with Sleep on the bottom axis.",
+            "On the left side of the graph, click the sideways words Drag an attribute or click here, then pick Diet. Each diet gets its own row of dots.",
+            "For each row, find where most of the dots sit. Ignore single stray dots for now.",
+            "Decide which diet group tends to sleep the most."],
+     check:[
+      {id:"a", t:"mc", q:"To compare two groups of dots, what should you look at first?", opts:["The single highest dot in each group","Where most of the dots sit in each group","Which group has more dots"], a:1, why:"The bulk of the dots describes the group. One dot does not."},
+      {id:"b", t:"mc", q:"Which group tends to have higher values?", fig:{k:"dots2", la:"Group A", lb:"Group B", a:[4,5,5,6,6,6,7,7,8], b:[3,7,8,8,9,9,9,10,10,11]}, opts:["Group A","Group B","They are about the same"], a:1, why:"Most of Group B sits higher, even though its lowest dot is the lowest of all."},
+      {id:"c", t:"txt", q:"Which diet group tends to sleep the most? Give your claim and the evidence you see in your graph.", rubric:"A claim naming a diet group, plus evidence about where that group's dots sit compared with the other groups, ideally with rough numbers of hours."}
+     ]}
+  ], gate:{ id:"g-s1a", title:"Gate 1A", n:10, extra:[
+     {id:"x1", t:"mc", q:"A bar chart shows favorite pizza toppings for 30 students. Its side axis is labeled Number of students. The pepperoni bar reaches 12. What does 12 mean?", opts:["12 students chose pepperoni","Pepperoni scored 12 points","12 percent chose pepperoni"], a:0},
+     {id:"x2", t:"mc", q:"Which of these is numeric data?", opts:["Jersey number","Eye color","Time to run a mile","Team name"], a:2},
+     {id:"x3", t:"mc", q:"You have breed and weight for 50 dogs. To see whether some breeds weigh more, you would…", opts:["Make a dot plot of weight, split by breed","Make a bar chart of how many dogs are in each breed","Make one dot plot of all 50 weights together"], a:0},
+     {id:"x4", t:"mc", q:"Which group tends to have higher values?", fig:{k:"dots2", la:"Group A", lb:"Group B", a:[2,3,3,4,4,5,5,6,12], b:[5,6,6,7,7,7,8,8,9]}, opts:["Group A","Group B","They are about the same"], a:1},
+     {id:"x5", t:"mc", q:"Which is a statistical question?", opts:["How many minutes of homework did I do last night?","How many minutes of homework do 7th graders at my school do each night?","How many minutes are in an hour?"], a:1},
+     {id:"x6", t:"mc", q:"A table has one row per student, with columns Name, Homeroom, Bus or walk, and Minutes to get to school. Which column is numeric?", opts:["Name","Homeroom","Bus or walk","Minutes to get to school"], a:3}
+  ]}},
+  { id:"s1b", title:"Unit 1B: Describing a distribution", sessions:[
+   { id:"s07", title:"Shape", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["A distribution is how the values of one column are spread out. Its shape has names.",
+            "Symmetric: the two sides mirror each other. Skewed right: a long tail toward big values. Skewed left: a long tail toward small values. Some data has no clear shape, and that is a fine answer.",
+            "In CODAP, graph Mass on the bottom axis. Decide which shape it has, and why mammals would come out that way.",
+            "Graph one more numeric column and write its shape in your notebook."],
+     check:[
+      {id:"a", t:"mc", q:"What is the shape of this distribution?", fig:{k:"dot", vals:[1,1,1,2,2,2,2,3,3,3,4,4,5,6,8,11]}, opts:["Symmetric","Skewed right","Skewed left"], a:1, why:"Most values are small and the tail runs toward the big ones."},
+      {id:"b", t:"mc", q:"What is the shape of this distribution?", fig:{k:"dot", vals:[2,3,3,4,4,4,5,5,5,5,6,6,6,7,7,8]}, opts:["Symmetric","Skewed right","Skewed left"], a:0, why:"The left and right sides mirror each other around 5."},
+      {id:"c", t:"mc", q:"In a city, most houses cost a moderate amount and a few cost an enormous amount. The shape of house prices is probably…", opts:["Symmetric","Skewed right","Skewed left"], a:1, why:"A few huge values stretch the tail to the right."}
+     ]},
+   { id:"s08", title:"Center: median and mean", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["By hand, in your notebook, use the data 3, 5, 6, 8, 30. The median is the middle value when they are in order. The mean is the total divided by how many.",
+            "You should get a median of 6 and a mean of 10.4. Notice which one sits with most of the values.",
+            "With an even number of values there are two in the middle. The median is halfway between them. For 3, 5, 8, 10 it is 6.5.",
+            "In CODAP, graph Mass. Click the graph, then click Measure (the ruler) beside it. Under Measures of Center, turn on Mean and Median. Write down which one is closer to where most mammals are."],
+     check:[
+      {id:"a", t:"num", q:"What is the median of 2, 4, 4, 7, 9, 10, 13?", a:7, why:"Seven values, so the 4th one in order is the middle."},
+      {id:"b", t:"num", q:"What is the mean of 2, 4, 6, 8, 10?", a:6, why:"They total 30, and 30 ÷ 5 = 6."},
+      {id:"c", t:"mc", q:"The data are 3, 5, 6, 8, 30. If the 30 became 300, which would change?", opts:["Only the median","Only the mean","Both","Neither"], a:1, why:"The middle value is still 6. The total, and so the mean, jumps."}
+     ]},
+   { id:"s09", title:"Spread: range and IQR", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["Range is the biggest value minus the smallest.",
+            "The IQR measures the middle half. Split the ordered data into a lower half and an upper half. With an odd count, leave the middle value out of both halves. Q1 is the median of the lower half. Q3 is the median of the upper half. IQR = Q3 − Q1.",
+            "By hand: for 1, 3, 4, 6, 7, 9, 10, 12 you should get Q1 = 3.5, Q3 = 9.5 and IQR = 6.",
+            "In CODAP, graph Sleep. Click Measure (the ruler) beside the graph, open Box Plot and Normal Curve, and turn on Box Plot. The box shows the IQR. Software can use a slightly different rule for quartiles, so its box may not match hand work exactly."],
+     check:[
+      {id:"a", t:"num", q:"What is the range of 4, 9, 2, 15, 7?", a:13, why:"15 − 2 = 13."},
+      {id:"b", t:"num", q:"The ordered data are 2, 4, 5, 7, 8, 10, 11, 15. What is Q1?", a:4.5, why:"The lower half is 2, 4, 5, 7. Its median is halfway between 4 and 5."},
+      {id:"c", t:"mc", q:"What does the IQR tell you?", opts:["How spread out the middle half of the data is","How far the biggest value is from the smallest","How many values are in the middle"], a:0, why:"It is the width of the box in a box plot."}
+     ]},
+   { id:"s10", title:"Outliers and which summary to trust", mins:15, link:{t:"Open CODAP with the Mammals data", u:CODAP_MAMMALS},
+     steps:["An outlier is a value far from the rest. It can be a mistake or a real, unusual case. Often you cannot tell without checking where the data came from.",
+            "The mean and the range get pulled by outliers. The median and the IQR mostly do not.",
+            "In CODAP, look through the numeric columns for one outlier. Click it to see which animal it is.",
+            "Decide: likely a mistake, likely real, or impossible to tell from here? Write down why."],
+     check:[
+      {id:"a", t:"mc", q:"Nine people in a room each earn about $50,000. A billionaire walks in. Which summary still describes a typical person in the room?", opts:["The mean","The median"], a:1, why:"The middle person still earns about $50,000."},
+      {id:"b", t:"mc", q:"A distribution is strongly skewed and has outliers. You want to describe a typical value and how spread out most values are. Which pair fits?", opts:["Mean and range","Median and IQR"], a:1, why:"They are not dragged around by a few extreme values."},
+      {id:"c", t:"txt", q:"Name one outlier you found: the animal, the column, and whether you think it is a mistake, real, or impossible to tell. Give your reason.", rubric:"Names an animal and a column, and gives a judgment (mistake, real, or cannot tell without checking the source) with a reason."}
+     ]},
+   { id:"s11", title:"Your data, analyzed", mins:20, link:{t:"Open a blank CODAP document", u:CODAP_NEW}, show:{from:"s01.a", kind:"react"},
+     steps:["Use your 7-day log if it has at least 5 days. If it does not, use your reaction times from session 1, listed below. Either one works.",
+            "In CODAP, click Tables and choose New. Type in your column names and your rows.",
+            "Make a dot plot for each numeric column. Use Measure (the ruler), then Measures of Center, to show the median.",
+            "Pick your most interesting graph. Take a screenshot of it now. You need it next session.",
+            "Compare the median with what you predicted."],
+     check:[
+      {id:"a", t:"txt", q:"Pick one column. Give what you predicted and the actual median.", rubric:"Names one column or measure, a predicted value and an actual median from the data."},
+      {id:"b", t:"mc", q:"Your data covers a short time for one person. What can you conclude from it?", opts:["How all 7th graders would come out","What happened for you during the time you measured","Nothing at all"], a:1, why:"The data describes what it measured: you, that week."}
+     ]},
+   { id:"s12", title:"Write your data story", mins:20,
+     steps:["Get the screenshot of your graph from last session. Make sure it has a title and a labeled axis. Add them by hand on a printout if you need to.",
+            "Write five sentences: the question you asked, how you collected the data, what the graph looks like, what you found (use the median and the range), and one limit of your data.",
+            "Paste your five sentences below.",
+            "Show a parent the graph and the story together. They sign it off."],
+     check:[
+      {id:"a", t:"txt", min:160, q:"Paste your five-sentence data story.", rubric:"Five parts: a question, how the data was collected, a description of the graph, a finding that gives both a median and a range, and one limit of the data."}
+     ]}
+  ], gate:{ id:"g-s1b", title:"Gate 1B", n:10,
+     product:{label:"One-page data story about your own data", rubric:["States a question","Says how the data was collected","Graph has a title and a labeled axis","Finding gives a median and a range that match the graph","Names one limit of the data"]},
+     extra:[
+      {id:"x1", t:"num", q:"What is the median of 8, 3, 10, 5?", a:6.5},
+      {id:"x2", t:"mc", q:"Which summary is pulled the most by one extreme value?", opts:["Median","Mean","IQR"], a:1},
+      {id:"x3", t:"num", q:"What is the mean of 4, 4, 5, 7, 10?", a:6},
+      {id:"x4", t:"num", q:"What is the range of 21, 16, 34, 25?", a:18},
+      {id:"x5", t:"mc", q:"What is the shape of this distribution?", fig:{k:"dot", vals:[3,5,6,6,7,7,7,8,8,8,8,9,9,9,10]}, opts:["Symmetric","Skewed right","Skewed left"], a:2},
+      {id:"x6", t:"mc", q:"Seven test scores are 70, 72, 75, 75, 78, 80 and 12. Which summary better describes a typical score?", opts:["The mean","The median"], a:1}
+  ]}},
+  { id:"s1c", title:"Unit 1C: Relationships", planned:true, list:["Scatter plots: two numbers for every dot","Strong, weak, or no pattern","Lines that fit, and what the slope means","Correlation is not causation","Choose a dataset you care about","Mini-project: one question, one graph, one claim"], note:"Ends with the Phase 1 gate: Khan Academy grade 6 and grade 7 statistics unit tests at 90%." }
+ ]},
+ { n:2, title:"Code", when:"Next", blurb:"Python, tables and plotting with Kaggle Learn. Rebuild your Phase 1 project in code.", units:[] },
+ { n:3, title:"Infer", when:"Later", blurb:"Randomness, sampling, simulation, tests by shuffling, and your own experiment.", units:[] },
+ { n:4, title:"Predict", when:"Later", blurb:"Regression, cross-validation, trees and clustering. First competition entry.", units:[] },
+ { n:5, title:"Prove it", when:"Later", blurb:"The AP Statistics course on Khan Academy, practice exams, then the exam.", units:[] }
+]},
+k4:{ wins:[{after:"m01", label:"Turn a pile of things into a bar graph"},{after:"m02", label:"Crack a mystery graph"},{after:"m06", label:"Ask a question that data can answer"},{after:"m09", label:"Read a dot plot"},{after:"m10", label:"Find the middle and the most"},{after:"m12", label:"Tell what your own data shows"}], phases:[
+ { n:1, title:"Notice", when:"About 18 sessions", blurb:"Count things, read graphs like a detective, and tell what your own data shows.", units:[
+  { id:"m1a", title:"Unit 1A: Graph detective", sessions:[
+   { id:"m01", title:"Guess, then count", mins:10,
+     steps:["Grab 12 small things that come in colors. LEGO bricks, crayons, beads or socks all work.",
+            "Before you count, guess. Which color is there the most of? Say your guess out loud.",
+            "Sort them into piles by color. Count each pile.",
+            "Now type your guess and your counts. Watch what the page draws."],
+     check:[
+      {id:"a", t:"tally", predict:true, q:"Type your guess. Then type each color and how many."},
+      {id:"b", t:"mc", q:"On your graph, what does the tallest bar show?", opts:["The color you had the most of","The color you like best","The biggest thing you counted"], a:0, why:"A taller bar means more things."}
+     ]},
+   { id:"m02", title:"Mystery graph", mins:8,
+     steps:[{t:"Look at this mystery graph. Say two things you notice, out loud.", fig:Object.assign({},MONTH_DAYS,{hideCats:true,hideVals:true,hideTitle:true})},
+            {t:"Now you can see the numbers. What has 28, 30 or 31 of something?", fig:Object.assign({},MONTH_DAYS,{hideCats:true,hideTitle:true})},
+            {t:"Here is the whole graph. Were you right?", fig:MONTH_DAYS}],
+     check:[
+      {id:"a", t:"mc", q:"What does each bar show?", opts:["How many days are in one month","How many months are in a year","How hot each month is"], a:0, why:"Each bar is one month. Its height is the number of days.", fig:MONTH_DAYS},
+      {id:"b", t:"mc", q:"Which month has the shortest bar?", opts:["January","February","June"], a:1, why:"In most years February has 28 days."},
+      {id:"c", t:"num", q:"How many bars reach all the way up to 31?", a:7, why:"January, March, May, July, August, October and December."}
+     ]},
+   { id:"m03", title:"Tally time", mins:10,
+     steps:["Pick something new to count at home. You could count book colors on a shelf, or kinds of shoes by the door.",
+            "In your notebook, write each kind on its own line.",
+            "Make one tally mark for each thing you see. Make four marks standing up. The fifth mark goes across them, like a gate.",
+            "Count the marks on each line. Then type your counts."],
+     check:[
+      {id:"a", t:"tally", q:"Type each kind and how many you counted."},
+      {id:"b", t:"num", q:"One bundle of five tally marks, and two more marks. How many is that?", a:7, why:"5 + 2 = 7."}
+     ]},
+   { id:"m04", title:"Picture graph", mins:10,
+     steps:["Open your notebook to your tally from last time.",
+            "Draw a picture graph. Pick a small picture, like a star. Each star stands for 2 things.",
+            "Half a star stands for 1 thing. So 7 things is 3 stars and half a star.",
+            "Write a key that says: 1 star = 2 things. A key tells what each picture stands for."],
+     check:[
+      {id:"a", t:"num", q:"Each ★ stands for 2 books. How many books is ★★★?", a:6, why:"2 + 2 + 2 = 6."},
+      {id:"b", t:"num", q:"Each ★ stands for 2 books. How many books is ★★★★ and half a ★?", a:9, why:"8 and 1 more is 9."},
+      {id:"c", t:"mc", q:"A picture graph has no key. What is the problem?", opts:["Nobody can tell how many each picture stands for","It has too many pictures","The pictures are too small"], a:0, why:"One star could mean 1 thing, or 2, or 10."}
+     ]},
+   { id:"m05", title:"Bar graph by hand", mins:10,
+     steps:["Draw a bar graph of your tally in your notebook. Use the lines on the paper to help.",
+            "Up the side, draw a number line. Start at 0. Go up by ones: 0, 1, 2, 3. If your biggest count is more than 10, go up by twos.",
+            "Draw one bar for each kind. Write its name under the bar.",
+            "Write a title on top that says what you counted."],
+     check:[
+      {id:"a", t:"mc", q:"What is missing from this graph?", fig:{k:"bar", cats:["Red","Blue","Green"], vals:[5,3,6], hideTitle:true}, opts:["A title","The bars","The names under the bars"], a:0, why:"Nothing says what was counted."},
+      {id:"b", t:"num", q:"In that graph, how many more Green than Blue?", fig:{k:"bar", cats:["Red","Blue","Green"], vals:[5,3,6], hideTitle:true}, a:3, why:"6 − 3 = 3."},
+      {id:"c", t:"mc", q:"One graph's number line starts at 0. Another starts at 4. Which one is fair for comparing bar heights?", opts:["The one that starts at 0","The one that starts at 4","Both are the same"], a:0, why:"Starting higher makes small differences look huge."}
+     ]},
+   { id:"m06", title:"Questions data can answer", mins:10,
+     steps:[{t:"One more mystery graph. There are 7 bars. What could the 7 things be?", fig:Object.assign({},CONTINENTS,{hideCats:true,hideTitle:true})},
+            {t:"Here is the whole graph. It counts the letters in each continent's name.", fig:CONTINENTS},
+            "Some questions need data. To answer them you have to count things or ask people.",
+            "In your notebook, write two questions you could answer by counting things at home or asking people."],
+     check:[
+      {id:"a", t:"mc", q:"Which question can you answer by collecting data?", opts:["What is the favorite fruit in my family?","What is 6 + 7?","How do you spell Wednesday?"], a:0, why:"You have to ask each person."},
+      {id:"b", t:"mc", q:"Which two continents have the tallest bars?", fig:CONTINENTS, opts:["North America and South America","Asia and Europe","Africa and Australia"], a:0, why:"Both names have 12 letters."},
+      {id:"c", t:"txt", min:12, q:"Type one question you could answer by counting or asking.", rubric:"Any question that needs counting several things or asking several people. Be generous. One sentence is enough."}
+     ]}
+  ], gate:{ id:"g-m1a", title:"Gate 1A", n:10, extra:[
+     {id:"x1", t:"num", q:"How many more kids picked Dog than Fish?", fig:{k:"bar", title:"Favorite pet (made-up class)", cats:["Cat","Dog","Fish","Bird"], vals:[4,7,2,3]}, a:5},
+     {id:"x2", t:"mc", q:"Which pet was picked the least?", fig:{k:"bar", title:"Favorite pet (made-up class)", cats:["Cat","Dog","Fish","Bird"], vals:[4,7,2,3]}, opts:["Cat","Fish","Bird"], a:1},
+     {id:"x3", t:"num", q:"Each ★ stands for 2 apples. How many apples is ★★★★★?", a:10},
+     {id:"x4", t:"num", q:"Two bundles of five tally marks, and three more marks. How many is that?", a:13},
+     {id:"x5", t:"mc", q:"Which question needs data?", opts:["Which color shirt do kids in my class wear the most?","What is 9 − 4?","What day comes after Monday?"], a:0}
+  ]}},
+  { id:"m1b", title:"Unit 1B: My data", sessions:[
+   { id:"m07", title:"Ask and collect", mins:10,
+     steps:["Data detectives work in four steps: ask, collect, draw, tell.",
+            "Pick a question. Use one you wrote last time, or try this: what does your pet do most? Watch for 10 minutes. Each minute, make a tally mark for sleep, sniff, play or beg. No pet? Watch a person: sit, stand, walk or talk.",
+            "Write your question at the top of a new page in your notebook.",
+            "Collect now. Ask at least 5 people, or count at least 12 things. Tally as you go.",
+            "Type your counts."],
+     check:[
+      {id:"a", t:"tally", q:"Type each kind and how many you counted."},
+      {id:"b", t:"mc", q:"What comes right after you ask a question?", opts:["Collect data","Draw a graph","Tell what you found"], a:0, why:"Ask, collect, draw, tell."}
+     ]},
+   { id:"m08", title:"Draw your graph", mins:10, show:{from:"m07.a", kind:"tally"},
+     steps:["Open your notebook to your tally from last time.",
+            "Draw a bar graph of it. Remember the title, the names under the bars, and a number line that starts at 0.",
+            "Now look at the graph the page drew from your counts. Does yours match?",
+            "Fix anything that is different."],
+     check:[
+      {id:"a", t:"mc", q:"What is missing from this graph?", fig:{k:"bar", title:"Favorite fruit (made-up)", cats:["Apple","Banana","Grape"], vals:[6,2,4], hideCats:true}, opts:["The names under the bars","A title","The number line"], a:0, why:"You cannot tell which bar is which."},
+      {id:"b", t:"num", q:"How many people were asked in all?", fig:{k:"bar", title:"Favorite fruit (made-up)", cats:["Apple","Banana","Grape"], vals:[6,2,4]}, a:12, why:"6 + 2 + 4 = 12."}
+     ]},
+   { id:"m09", title:"Dot plots", mins:8,
+     steps:[{t:"This is a dot plot. It shows the same months as the mystery graph. Each dot is one month. The dot sits above its number of days.", fig:{k:"dot", title:"Days in each month", label:"Number of days", vals:[31,28,31,30,31,30,31,31,30,31,30,31]}},
+            "February has 28 days, so its dot is above the 28.",
+            "When months have the same number of days, their dots stack up."],
+     check:[
+      {id:"a", t:"num", q:"How many months have 30 days?", fig:{k:"dot", title:"Days in each month", label:"Number of days", vals:[31,28,31,30,31,30,31,31,30,31,30,31]}, a:4, why:"There are 4 dots above the 30."},
+      {id:"b", t:"num", q:"How many dots are on the whole plot?", a:12, why:"One dot for each of the 12 months."},
+      {id:"c", t:"mc", q:"Why is there nothing above the 29?", opts:["No month on this plot has 29 days","Someone forgot a dot","29 is not a real number"], a:0, why:"A gap means no month has that many days."}
+     ]},
+   { id:"m10", title:"Middle and most", mins:10,
+     steps:["Write these numbers on five scraps of paper: 4, 9, 2, 7, 5.",
+            "Line them up from smallest to biggest.",
+            "Take one away from each end, again and again, until one is left. That is the middle: 5. Its fancy name is the median.",
+            "The number you see most often has a name too. It is the mode."],
+     check:[
+      {id:"a", t:"num", q:"Line them up and find the middle: 8, 3, 6, 1, 10", a:6, why:"In order: 1, 3, 6, 8, 10. The middle is 6."},
+      {id:"b", t:"num", q:"Which number shows up the most? 3, 6, 3, 8, 6, 3", a:3, why:"There are three 3s."},
+      {id:"c", t:"num", q:"Find the middle: 10, 2, 8, 6, 4, 12, 14", a:8, why:"In order: 2, 4, 6, 8, 10, 12, 14. The middle is 8."}
+     ]},
+   { id:"m11", title:"Measure and range", mins:10,
+     steps:["Get a ruler. Find 5 things on a table or desk: a book, a spoon, a shoe, anything.",
+            "Measure how long each one is, to the nearest inch. Write the 5 numbers in your notebook.",
+            "Find the biggest number and the smallest number.",
+            "Take the smallest away from the biggest. That is the range. It tells how far apart the smallest and biggest are."],
+     check:[
+      {id:"a", t:"num", q:"What is the range of 12, 7, 20, 15?", a:13, why:"20 − 7 = 13."},
+      {id:"b", t:"num", q:"The shortest kid is 48 inches tall. The tallest is 59 inches. What is the range?", a:11, why:"59 − 48 = 11."},
+      {id:"c", t:"mc", q:"A big range tells you that…", opts:["The smallest and biggest numbers are far apart","All the numbers are big","Most of the numbers are the same"], a:0, why:"Range only looks at the two ends."}
+     ]},
+   { id:"m12", title:"Tell the story", mins:12, show:{from:"m07.a", kind:"tally"},
+     steps:["Get out your bar graph from this unit. Check it has a title, names and a number line from 0.",
+            "Say three sentences out loud. Start them: I asked… I found… I wonder…",
+            "Type your three sentences. If typing is slow, a parent can type while you say them.",
+            "Show a parent your graph and your sentences."],
+     check:[
+      {id:"a", t:"txt", min:40, q:"Type your three sentences.", rubric:"Three parts: what was asked, what was found (naming the kind that had the most, or a number), and something the student wonders next. Be generous with spelling."}
+     ]}
+  ], gate:{ id:"g-m1b", title:"Gate 1B", n:10,
+     product:{label:"Bar graph with three sentences", rubric:["Has a title","Names under the bars","Number line starts at 0 and counts evenly","The finding matches the graph","Asks a new question"]},
+     extra:[
+      {id:"x1", t:"num", q:"Find the middle: 6, 1, 9, 3, 7", a:6},
+      {id:"x2", t:"mc", q:"On a dot plot, what is one dot?", opts:["One thing that was counted or measured","The biggest number","A mistake"], a:0},
+      {id:"x3", t:"num", q:"Which number shows up the most? 5, 2, 5, 9, 2, 5, 7", a:5},
+      {id:"x4", t:"num", q:"The smallest number is 15. The biggest is 40. What is the range?", a:25},
+      {id:"x5", t:"num", q:"How many kids read exactly 3 books?", fig:{k:"dot", title:"Books read by 9 kids (made-up)", label:"Number of books", vals:[1,2,2,3,3,3,4,4,6]}, a:3},
+      {id:"x6", t:"num", q:"What is the most books any kid read?", fig:{k:"dot", title:"Books read by 9 kids (made-up)", label:"Number of books", vals:[1,2,2,3,3,3,4,4,6]}, a:6}
+  ]}},
+  { id:"m1c", title:"Unit 1C: Fair or not?", planned:true, list:["Coin flips: predict, then flip 20 times","Roll a die 30 times and make a dot plot","A handful tells you about the bag","Graphs that trick you","Ask eight people two questions","Make your first poster"], note:"Ends with the Phase 1 gate: Khan Academy grade 3 unit test on representing data at 90%." }
+ ]},
+ { n:2, title:"Collect", when:"Next", blurb:"Surveys, coins and dice, fair samples, and a weekly data postcard.", units:[] },
+ { n:3, title:"Explore", when:"Later", blurb:"CODAP on a computer: tables, sorting and comparing groups. First national poster entry.", units:[] },
+ { n:4, title:"Measure", when:"Later", blurb:"Histograms, the mean, box plots and spread.", units:[] },
+ { n:5, title:"Relate", when:"Later", blurb:"Scatter plots, sampling, probability and first lines of code.", units:[] }
+]}
+};
+
+/* ============================== HELPERS ============================== */
+function el(tag, attrs, ...kids){
+  const n = document.createElement(tag);
+  if(attrs) for(const [k,v] of Object.entries(attrs)){
+    if(v==null || v===false) continue;
+    if(k==="class") n.className = v;
+    else if(k==="svg") n.innerHTML = v;            // trusted, generated here
+    else if(k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else n.setAttribute(k, v===true ? "" : v);
+  }
+  for(const c of kids.flat(3)){ if(c==null || c===false) continue; n.append(c.nodeType ? c : document.createTextNode(String(c))); }
+  return n;
+}
+const pad = n => String(n).padStart(2,"0");
+function dstr(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function today(){ return dstr(new Date()); }
+function addDays(s, n){ const d = new Date(s+"T12:00:00"); d.setDate(d.getDate()+n); return dstr(d); }
+function weekStart(s){ const d = new Date(s+"T12:00:00"); const wd = (d.getDay()+6)%7; d.setDate(d.getDate()-wd); return dstr(d); }
+function shuffle(a){ const b=a.slice(); for(let i=b.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [b[i],b[j]]=[b[j],b[i]]; } return b; }
+function withTimeout(p, ms){ return Promise.race([p, new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")), ms))]); }
+function esc(s){ return String(s).replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+/* ---- content lookups ---- */
+function unitsOf(kid){ return TRACKS[kid].phases.flatMap(p=>p.units.map(u=>Object.assign({phase:p}, u))); }
+function findSession(kid, sid){ for(const u of unitsOf(kid)) for(const s of (u.sessions||[])) if(s.id===sid) return {unit:u, session:s}; return null; }
+function findGate(kid, gid){ for(const u of unitsOf(kid)) if(u.gate && u.gate.id===gid) return {unit:u, gate:u.gate}; return null; }
+function autoItems(unit){ const out=[]; for(const s of unit.sessions) for(const it of s.check) if(it.t==="mc"||it.t==="num") out.push({key:s.id+"."+it.id, sid:s.id, item:it}); for(const it of (unit.gate.extra||[])) out.push({key:unit.gate.id+"."+it.id, sid:null, item:it}); return out; }
+function itemByKey(kid, key){ for(const u of unitsOf(kid)){ if(!u.sessions) continue; for(const a of autoItems(u)) if(a.key===key) return a; } return null; }
+
+for(const kk of Object.keys(KIDS)){
+  Object.defineProperty(KIDS[kk], "named", {get(){ return !!((Store.get("parent").names||{})[kk]); }});
+  Object.defineProperty(KIDS[kk], "name", {get(){ return (Store.get("parent").names||{})[kk] || KIDS[kk].dflt; }});
+}
+function inClaude(){ return !!(window.claude && typeof window.claude.use==="function"); }
+
+/* ============================== GITHUB SYNC ==============================
+   Optional. Outside Claude, progress can live as small JSON files in a private GitHub repo the parent owns.
+   The repo name and token are kept in this device's storage only. Same doc interface as the Claude store. */
+const GH = {
+  cfg(){ try{ const c = JSON.parse(localStorage.getItem("datalab:gh") || "null"); return c && c.repo && c.token ? c : null; }catch(e){ return null; } },
+  setCfg(c){ try{ if(c) localStorage.setItem("datalab:gh", JSON.stringify(c)); else localStorage.removeItem("datalab:gh"); return true; }catch(e){ return false; } },
+  b64e(str){ return btoa(unescape(encodeURIComponent(str))); },
+  b64d(str){ return decodeURIComponent(escape(atob(String(str).replace(/\s/g, "")))); },
+  head(c){ return {"Authorization":"Bearer "+c.token, "Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"}; },
+  fail(r){ const e = new Error("github "+r.status); e.status = r.status; if(r.status===409 || r.status===422) e.conflict = true; return e; },
+  db(c){ const shas = {}; return { doc(p){ const path = p+".json", url = "https://api.github.com/repos/"+c.repo+"/contents/"+path; return {
+    async get(){ const r = await fetch(url+"?t="+Date.now(), {cache:"no-store", headers:GH.head(c)});
+      if(r.status===404){ shas[path] = null; return {exists:false}; }
+      if(!r.ok) throw GH.fail(r);
+      const j = await r.json(); shas[path] = j.sha; const data = JSON.parse(GH.b64d(j.content)); return {exists:true, data:()=>data}; },
+    async set(obj){ const body = {message:"Data Lab progress: "+p, content:GH.b64e(JSON.stringify(obj))}; if(shas[path]) body.sha = shas[path];
+      const r = await fetch(url, {method:"PUT", cache:"no-store", headers:GH.head(c), body:JSON.stringify(body)});
+      if(!r.ok) throw GH.fail(r);
+      const j = await r.json(); shas[path] = j.content && j.content.sha; }
+  }; } }; },
+  async test(c){
+    const r = await fetch("https://api.github.com/repos/"+c.repo, {cache:"no-store", headers:GH.head(c)});
+    if(r.status===401) return "GitHub did not accept that token.";
+    if(r.status===404 || r.status===403) return "That repo was not found, or the token cannot see it.";
+    if(!r.ok) return "GitHub answered with error "+r.status+".";
+    const j = await r.json(); if(j && j.private===false) return "That repo is public. Use a private repo for progress.";
+    try{ const d = GH.db(c).doc("state/device-check"); await d.get(); await d.set({t:Date.now()}); }
+    catch(e){ return e && (e.status===403 || e.status===404) ? "The token can read that repo but cannot write to it. Give it Contents: Read and write." : "The write test failed"+(e && e.status ? " with error "+e.status : "")+". Try again."; }
+    return "";
+  }
+};
+
+/* ============================== STORE ============================== */
+const Store = {
+  db:null, kind:"", err:null, tried:false, mode:"checking", localOk:true, data:{}, writing:{}, queued:{}, retry:{},
+  blank(){ return {v:1, epoch:0, ts:0, done:{}, ans:{}, rev:{}, gates:{}, log:[], interests:[], stats:{fn:0, fok:0, rn:0, rok:0}}; },
+  local(k){ try{ const s = localStorage.getItem("datalab:"+k); return s ? JSON.parse(s) : null; }catch(e){ return null; } },
+  setLocal(k, v){ try{ localStorage.setItem("datalab:"+k, JSON.stringify(v)); return true; }catch(e){ return false; } },
+  async connect(){
+    try{ if(window.claude && typeof window.claude.use==="function") this.db = await window.claude.use("db"); }catch(e){ this.db = null; }
+    if(this.db) this.kind = "claude";
+    else { const c = GH.cfg(); if(c){ this.db = GH.db(c); this.kind = "github"; } }
+    this.tried = true;
+  },
+  merge(a, b){
+    if(!a) return b; if(!b) return a;
+    const ea = a.epoch||0, eb = b.epoch||0;
+    if(ea !== eb) return ea > eb ? a : b;      // a reset bumps the epoch; the newer epoch wins whole, so erased progress cannot merge back
+    const o = this.blank(); o.epoch = ea;
+    const pick = (x,y,f)=> !x ? y : !y ? x : ((x[f]||0) >= (y[f]||0) ? x : y);
+    for(const k of new Set([...Object.keys(a.done||{}), ...Object.keys(b.done||{})])){
+      const w = pick((a.done||{})[k], (b.done||{})[k], "t"); o.done[k] = w;
+      const src = (w === (a.done||{})[k]) ? a : b; const an = (src.ans||{})[k] || (a.ans||{})[k] || (b.ans||{})[k]; if(an) o.ans[k] = an;
+    }
+    for(const k of new Set([...Object.keys(a.ans||{}), ...Object.keys(b.ans||{})])) if(!o.ans[k]) o.ans[k] = (a.ans||{})[k] || (b.ans||{})[k];
+    for(const k of new Set([...Object.keys(a.rev||{}), ...Object.keys(b.rev||{})])) o.rev[k] = pick((a.rev||{})[k], (b.rev||{})[k], "u");
+    for(const k of new Set([...Object.keys(a.gates||{}), ...Object.keys(b.gates||{})])){
+      const x = (a.gates||{})[k] || {}, y = (b.gates||{})[k] || {};
+      const g = {};
+      if(x.quiz || y.quiz){ const q = pick(x.quiz, y.quiz, "t"); g.quiz = Object.assign({}, q, {best: Math.max((x.quiz||{}).best||0, (y.quiz||{}).best||0), tries: Math.max((x.quiz||{}).tries||0, (y.quiz||{}).tries||0)}); }
+      if(x.ext || y.ext){ g.ext = {}; for(const e of new Set([...Object.keys(x.ext||{}), ...Object.keys(y.ext||{})])) g.ext[e] = pick((x.ext||{})[e], (y.ext||{})[e], "t"); }
+      if(x.sign || y.sign) g.sign = pick(x.sign, y.sign, "t");
+      o.gates[k] = g;
+    }
+    const seen = new Set(); for(const e of [...(a.log||[]), ...(b.log||[])]){ const key = e.d+"|"+e.sid; if(!seen.has(key)){ seen.add(key); o.log.push(e); } }
+    o.log.sort((p,q)=> p.d<q.d ? -1 : p.d>q.d ? 1 : 0);
+    o.interests = [...new Set([...(a.interests||[]), ...(b.interests||[])])];
+    for(const f of ["fn","fok","rn","rok"]) o.stats[f] = Math.max((a.stats||{})[f]||0, (b.stats||{})[f]||0);
+    if(a.code || b.code) o.code = (a.ts||0) >= (b.ts||0) ? (a.code || b.code) : (b.code || a.code);
+    if(a.names || b.names){ const na = (a.ts||0) >= (b.ts||0); o.names = Object.assign({}, na ? b.names : a.names, na ? a.names : b.names); }
+    o.ts = Math.max(a.ts||0, b.ts||0);
+    return o;
+  },
+  get(k){ if(!this.data[k]) this.data[k] = Object.assign(this.blank(), this.local(k) || {}); return this.data[k]; },
+  reset(k){ const e = (this.get(k).epoch||0) + 1; this.adopt(k, Object.assign(this.blank(), {epoch:e})); this.save(k); },
+  adopt(k, next){ const d = this.get(k); if(next === d) return d; for(const key of Object.keys(d)) delete d[key]; Object.assign(d, next); return d; },   // in place, so views holding a reference stay valid
+  async pull(k){
+    let cloud = null, ok = false;
+    if(this.db){
+      try{ const snap = await withTimeout(this.db.doc("state/"+k).get(), 10000); ok = true; this.err = null; if(snap && snap.exists){ cloud = JSON.parse(JSON.stringify(snap.data())); } }
+      catch(e){ ok = false; this.err = (e && e.status) || "net"; }
+    }
+    const before = JSON.stringify(this.get(k));
+    if(cloud) this.adopt(k, this.merge(this.get(k), cloud));
+    this.localOk = this.setLocal(k, this.data[k]);
+    if(ok && JSON.stringify(cloud) !== JSON.stringify(this.data[k]) && this.data[k].ts) this.push(k);
+    this.mode = (this.db && ok) ? "cloud" : (this.localOk ? "device" : "none");
+    return before !== JSON.stringify(this.data[k]);
+  },
+  async push(k){
+    if(!this.db) return;
+    if(this.writing[k]){ this.queued[k] = true; return; }
+    this.writing[k] = true;
+    try{
+      const ref = this.db.doc("state/"+k);
+      const snap = await withTimeout(ref.get(), 10000);          // merge with whatever another device wrote, so a whole-document write cannot erase it
+      if(snap && snap.exists) this.adopt(k, this.merge(this.get(k), JSON.parse(JSON.stringify(snap.data()))));
+      this.localOk = this.setLocal(k, this.data[k]);
+      await withTimeout(ref.set(JSON.parse(JSON.stringify(this.data[k]))), 10000);
+      this.mode = "cloud"; this.err = null; this.retry[k] = false;
+    }catch(e){
+      if(e && e.conflict && !this.retry[k]){ this.retry[k] = true; this.writing[k] = false; return this.push(k); }   // another device wrote in between: read, merge and write once more
+      this.retry[k] = false; this.err = (e && e.status) || "net"; this.mode = this.localOk ? "device" : "none";
+    }
+    this.writing[k] = false;
+    renderSync();
+    if(this.queued[k]){ this.queued[k] = false; this.push(k); }
+  },
+  save(k){ const d = this.get(k); d.ts = Date.now(); this.localOk = this.setLocal(k, d); if(!this.db) this.mode = this.localOk ? "device" : "none"; this.push(k); renderSync(); }
+};
+
+const AI = { sample:null, tts:null,
+  async connect(){
+    try{ if(window.claude && typeof window.claude.use==="function"){ this.sample = await window.claude.use("sample"); } }catch(e){ this.sample = null; }
+    try{ if(window.claude && typeof window.claude.use==="function"){ this.tts = await window.claude.use("tts"); } }catch(e){ this.tts = null; }
+  },
+  canSpeak(){ return !!this.tts || (typeof window.speechSynthesis !== "undefined"); },
+  speak(text){
+    if(this.tts){ this.tts.speak(text, {rate:0.9}).catch(()=>{}); return; }
+    try{ window.speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 0.9; window.speechSynthesis.speak(u); }catch(e){}
+  },
+  async grade(kid, item, text){
+    if(!this.sample) return null;
+    const k = KIDS[kid];
+    const p = "You are checking one short written answer from "+k.name+", age "+k.age+", in a self-paced data lesson.\n"
+      + "Question: "+item.q+"\nWhat a good answer has: "+item.rubric+"\nStudent answer: \"\"\""+text+"\"\"\"\n"
+      + "Be encouraging and generous. Pass any honest attempt that has what is asked for. Ignore spelling and grammar. "
+      + "If something required is missing, do not pass it, and say what kind of thing to add. Never write the answer or an example answer for the student.\n"
+      + "Reply with only JSON: {\"ok\": true or false, \"fb\": \"one or two short sentences spoken to the student"+(k.age<10?", in simple words":"")+"\"}";
+    try{ const r = await this.sample(p, {modelTier:"quick"}); const m = /\{[\s\S]*\}/.exec((r && r.text) || ""); if(!m) return null; const j = JSON.parse(m[0]); return {ok: !!j.ok, fb: String(j.fb||"").slice(0,300)}; }
+    catch(e){ return null; }
+  },
+  async coach(kid, session, history, question){
+    if(!this.sample) return null;
+    const k = KIDS[kid];
+    const steps = session.steps.map((s,i)=> (i+1)+". "+(typeof s==="string" ? s : s.t)).join("\n");
+    const checks = session.check.map(c=>"- "+c.q).join("\n");
+    const convo = history.map(h=> (h.who==="me" ? k.name : "Coach")+": "+h.text).join("\n");
+    const p = "You are a patient coach for "+k.name+", age "+k.age+", who is working alone on a short data lesson.\n"
+      + "Rules: give one hint or ask one guiding question at a time. Never give the answer to a check question. "
+      + (k.age<10 ? "Use short, simple words and at most two sentences. " : "Use at most three sentences. ")
+      + "If the question is off topic, kindly steer back to the lesson. If the tool or link seems broken, say to tell a parent.\n"
+      + "Lesson: "+session.title+"\nSteps:\n"+steps+"\nCheck questions you must not answer:\n"+checks+"\n"
+      + (convo ? "Conversation so far:\n"+convo+"\n" : "") + k.name+": "+question+"\nCoach:";
+    try{ const r = await this.sample(p, {modelTier:"quick", cache:false}); return String((r && r.text) || "").slice(0,500) || null; }catch(e){ return null; }
+  }
+};
+
+/* ============================== FIGURES ============================== */
+function niceTop(max){ const step = max<=12 ? 2 : max<=40 ? 5 : 10; return {step, top: Math.ceil(max/step)*step}; }
+function barFig(f){
+  const W=520, H=230, L=40, R=12, T=(f.title && !f.hideTitle) ? 30 : 12, B=36;
+  const {step, top} = niceTop(Math.max(...f.vals));
+  const pw = W-L-R, ph = H-T-B, n = f.vals.length, bw = pw/n;
+  const y = v => T + ph - (v/top)*ph;
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" role="img" aria-label="'+esc(f.hideTitle ? "Bar graph" : (f.title||"Bar graph"))+'">';
+  if(f.title && !f.hideTitle) s += '<text class="ttl" x="'+L+'" y="18">'+esc(f.title)+'</text>';
+  for(let v=0; v<=top; v+=step){ s += '<line class="gl" x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'"/>'; if(!f.hideVals) s += '<text x="'+(L-6)+'" y="'+(y(v)+4)+'" text-anchor="end">'+v+'</text>'; }
+  f.vals.forEach((v,i)=>{ const x = L + i*bw + bw*0.15; s += '<rect class="mark" x="'+x.toFixed(1)+'" y="'+y(v).toFixed(1)+'" width="'+(bw*0.7).toFixed(1)+'" height="'+(T+ph-y(v)).toFixed(1)+'" rx="2"/>'; s += '<text x="'+(L+i*bw+bw/2).toFixed(1)+'" y="'+(H-B+16)+'" text-anchor="middle">'+esc(f.hideCats ? "?" : f.cats[i])+'</text>'; });
+  s += '<line class="axis" x1="'+L+'" x2="'+(W-R)+'" y1="'+(T+ph)+'" y2="'+(T+ph)+'"/><line class="axis" x1="'+L+'" x2="'+L+'" y1="'+T+'" y2="'+(T+ph)+'"/></svg>';
+  return s;
+}
+function dotRows(rows, opts){
+  const all = rows.flatMap(r=>r.vals), lo = Math.min(...all), hi = Math.max(...all);
+  const W=520, L=rows.some(r=>r.name) ? 70 : 24, R=24, T=opts.title ? 30 : 10, r=6, rowH = rows.map(row=>{ const c={}; let m=0; row.vals.forEach(v=>{ c[v]=(c[v]||0)+1; m=Math.max(m,c[v]); }); return m*(2*r+2)+14; });
+  const H = T + rowH.reduce((a,b)=>a+b,0) + (opts.label ? 44 : 28);
+  const x = v => L + (hi===lo ? 0.5 : (v-lo)/(hi-lo)) * (W-L-R);
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" role="img" aria-label="'+esc(opts.title||"Dot plot")+'">';
+  if(opts.title) s += '<text class="ttl" x="'+L+'" y="18">'+esc(opts.title)+'</text>';
+  let base = T;
+  rows.forEach((row,ri)=>{ base += rowH[ri]; const c={}; row.vals.forEach(v=>{ c[v]=(c[v]||0)+1; s += '<circle class="mark" cx="'+x(v).toFixed(1)+'" cy="'+(base - 8 - (c[v]-1)*(2*r+2) - r)+'" r="'+r+'"/>'; });
+    s += '<line class="'+(ri===rows.length-1 ? "axis" : "gl")+'" x1="'+(L-10)+'" x2="'+(W-R+10)+'" y1="'+(base-6)+'" y2="'+(base-6)+'"/>';
+    if(row.name) s += '<text x="4" y="'+(base-12)+'">'+esc(row.name)+'</text>'; });
+  for(let v=lo; v<=hi; v++){ if(hi-lo > 16 && v%2) continue; s += '<line class="axis" x1="'+x(v)+'" x2="'+x(v)+'" y1="'+(base-6)+'" y2="'+(base-1)+'"/><text x="'+x(v)+'" y="'+(base+12)+'" text-anchor="middle">'+v+'</text>'; }
+  if(opts.label) s += '<text x="'+((L+W-R)/2)+'" y="'+(base+30)+'" text-anchor="middle">'+esc(opts.label)+'</text>';
+  return s + '</svg>';
+}
+function stripFig(f){
+  const all = [...f.a, ...f.b], step = 20, r = 5, W = 520, L = 70, R = 24;
+  const lo = Math.floor(Math.min(...all)/100)*100, hi = Math.max(lo+100, Math.ceil(Math.max(...all)/100)*100);
+  const x = v => L + (v-lo)/(hi-lo)*(W-L-R);
+  const rows = [{name:f.la, vals:f.a},{name:f.lb, vals:f.b}];
+  const hs = rows.map(row=>{ const c={}; let m=0; row.vals.forEach(v=>{ const b=Math.round(v/step); c[b]=(c[b]||0)+1; m=Math.max(m,c[b]); }); return m*(2*r+2)+16; });
+  const H = 10 + hs[0] + hs[1] + 44;
+  let s = '<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" role="img" aria-label="Dot plots of reaction times for each hand">', base = 10;
+  rows.forEach((row,ri)=>{ base += hs[ri]; const c={}; row.vals.forEach(v=>{ const b=Math.round(v/step); c[b]=(c[b]||0)+1; s += '<circle class="mark" cx="'+x(b*step).toFixed(1)+'" cy="'+(base-8-(c[b]-1)*(2*r+2)-r)+'" r="'+r+'"/>'; });
+    s += '<line class="'+(ri===1?"axis":"gl")+'" x1="'+(L-10)+'" x2="'+(W-R+10)+'" y1="'+(base-6)+'" y2="'+(base-6)+'"/><text x="4" y="'+(base-12)+'">'+esc(row.name)+'</text>'; });
+  const tstep = (hi-lo)/100 > 10 ? 200 : 100;
+  for(let v=lo; v<=hi; v+=tstep) s += '<line class="axis" x1="'+x(v)+'" x2="'+x(v)+'" y1="'+(base-6)+'" y2="'+(base-1)+'"/><text x="'+x(v)+'" y="'+(base+12)+'" text-anchor="middle">'+v+'</text>';
+  return s + '<text x="'+((L+W-R)/2)+'" y="'+(base+30)+'" text-anchor="middle">Reaction time in milliseconds. Lower is faster.</text></svg>';
+}
+function median(a){ const b = a.slice().sort((p,q)=>p-q), n = b.length; return n ? (n%2 ? b[(n-1)/2] : (b[n/2-1]+b[n/2])/2) : 0; }
+function figure(f){
+  if(!f) return null;
+  const svg = f.k==="strip2" ? stripFig(f) : f.k==="bar" ? barFig(f) : f.k==="dot" ? dotRows([{vals:f.vals}], {title:f.title, label:f.label}) : f.k==="dots2" ? dotRows([{name:f.la, vals:f.a},{name:f.lb, vals:f.b}], {}) : "";
+  return el("div", {class:"fig", svg});
+}
+
+/* ============================== PROGRESS LOGIC ============================== */
+function gateState(kid, unit){
+  const st = Store.get(kid), g = unit.gate, gs = st.gates[g.id] || {};
+  const pool = autoItems(unit).length, n = Math.min(g.n, pool), need = Math.ceil(n*0.9);
+  const quizOk = !!gs.quiz && gs.quiz.best >= need;
+  const prodOk = !g.product || !!gs.sign;
+  return {gs, n, need, quizOk, prodOk, passed: quizOk && prodOk};
+}
+function position(kid){
+  const st = Store.get(kid);
+  for(const u of unitsOf(kid)){
+    if(u.planned || !u.sessions) return {kind:"end", unit:u};
+    if(gateState(kid, u).passed) continue;
+    for(const s of u.sessions) if(!st.done[s.id]) return {kind:"session", unit:u, session:s};
+    return {kind:"gate", unit:u};
+  }
+  return {kind:"end", unit:null};
+}
+function counts(kid){
+  const st = Store.get(kid), t = today(), ws = weekStart(t), we = addDays(ws, 6), goal = KIDS[kid].weekly;
+  const real = st.log.filter(e=>e.sid!=="review");
+  const todayN = real.filter(e=>e.d===t).length;
+  const weekN = real.filter(e=>e.d>=ws && e.d<=we).length;
+  let total = 0, skipped = 0, authored = 0, fa = 0, fo = 0;
+  for(const u of unitsOf(kid)){ if(!u.sessions) continue; const passed = gateState(kid, u).passed; for(const x of u.sessions){ authored++; const d = st.done[x.id]; if(d){ total++; fa += d.auto||0; fo += d.first||0; } else if(passed) skipped++; } }
+  const due = Object.entries(st.rev).filter(([k,r])=> r.due <= t && itemByKey(kid,k)).length;
+  const days = new Set(st.log.map(e=>e.d));
+  let dayStreak = 0, d = days.has(t) ? t : addDays(t,-1);
+  while(days.has(d)){ dayStreak++; d = addDays(d,-1); }
+  const perWeek = {}; real.forEach(e=>{ const w = weekStart(e.d); perWeek[w] = (perWeek[w]||0)+1; });
+  let weekStreak = 0, w = (perWeek[ws]||0) >= goal ? ws : addDays(ws,-7);
+  while((perWeek[w]||0) >= goal){ weekStreak++; w = addDays(w,-7); }
+  return {todayN, weekN, total, skipped, authored, due, dayStreak, weekStreak, firstAuto:fa, firstOk:fo};
+}
+function winsOf(kid){
+  const st = Store.get(kid);
+  return (TRACKS[kid].wins||[]).map(w=>{ const f = findSession(kid, w.after); return {label:w.label, got: !!st.done[w.after] || (f && gateState(kid, f.unit).passed)}; });
+}
+function logReview(kid){ const st = Store.get(kid), t = today(); if(!st.log.some(e=>e.d===t && e.sid==="review")) st.log.push({d:t, sid:"review"}); }
+const BOX_DAYS = [1,3,7,14,30];
+function schedule(kid, key, correct){
+  const st = Store.get(kid), r = st.rev[key] || {box:-1};
+  const box = correct ? Math.min(r.box+1, BOX_DAYS.length-1) : 0;
+  st.rev[key] = {box, due: addDays(today(), correct ? BOX_DAYS[box] : 1), u: Date.now()};
+}
+
+/* ============================== ITEM WIDGETS ============================== */
+// done(result) is called once when the item is resolved. result = {first:boolean, value?, graded?}
+function renderItem(kid, sid, item, done, opts){
+  opts = opts || {};
+  const box = el("div", {class:"item"});
+  const speakBtn = AI.canSpeak() && KIDS[kid].age < 10 ? el("button", {class:"say", type:"button", onclick:()=>AI.speak(item.q + (item.opts ? ". " + item.opts.join(". ") : ""))}, "Read it to me") : null;
+  box.append(el("p", null, el("b", null, item.q), speakBtn));
+  if(item.fig) box.append(figure(item.fig));
+  const fb = el("div", {role:"status"});
+  let first = true, resolved = false;
+  const finish = (res)=>{ if(resolved) return; resolved = true; done(res); };
+
+  if(item.t==="mc"){
+    const order = opts.noShuffle ? item.opts.map((_,i)=>i) : shuffle(item.opts.map((_,i)=>i));
+    const wrap = el("div", {class:"opts"});
+    order.forEach(i=>{
+      const b = el("button", {type:"button", onclick:()=>{
+        if(resolved) return;
+        if(i===item.a){ b.classList.add("right"); wrap.querySelectorAll("button").forEach(x=>x.disabled=true); fb.className="fb good"; fb.textContent = (first ? "Yes. " : "That's it. ") + (item.why||""); finish({first}); }
+        else if(opts.oneShot){ b.classList.add("wrong"); wrap.querySelectorAll("button").forEach((x,xi)=>{ x.disabled=true; if(order[xi]===item.a) x.classList.add("right"); }); fb.className="fb bad"; fb.textContent="Not that one."; finish({first:false}); }
+        else { first=false; b.classList.add("wrong"); b.disabled=true; fb.className="fb bad"; fb.textContent="Not that one. Look again and pick another."; }
+      }}, item.opts[i]);
+      wrap.append(b);
+    });
+    box.append(wrap, fb);
+  }
+  else if(item.t==="num"){
+    const inp = el("input", {type:"number", step:"any", inputmode:"decimal", id:"n-"+sid+"-"+item.id+"-"+Math.random().toString(36).slice(2,7), "aria-label":"Your answer"});
+    const go = el("button", {class:"second", type:"button"}, "Check");
+    const act = ()=>{
+      if(resolved || inp.value==="") return;
+      const ok = Math.abs(parseFloat(inp.value) - item.a) <= (item.tol || 0.001);
+      if(ok){ inp.disabled=true; go.disabled=true; fb.className="fb good"; fb.textContent=(first ? "Yes. " : "That's it. ")+(item.why||""); finish({first}); }
+      else if(opts.oneShot){ inp.disabled=true; go.disabled=true; fb.className="fb bad"; fb.textContent="Not quite. The answer is "+item.a+"."; finish({first:false}); }
+      else { first=false; fb.className="fb bad"; fb.textContent="Not quite. Check your work and try again."; }
+    };
+    go.addEventListener("click", act); inp.addEventListener("keydown", e=>{ if(e.key==="Enter") act(); });
+    box.append(el("div", {class:"row", style:"margin-top:10px"}, inp, go), fb);
+  }
+  else if(item.t==="txt"){
+    const ta = el("textarea", {id:"t-"+sid+"-"+item.id, "aria-label":"Your answer", maxlength:"900"});
+    const prev = ((Store.get(kid).ans[sid]||{})[item.id]||{}).a; if(prev) ta.value = prev;
+    const go = el("button", {class:"second", type:"button"}, "Submit");
+    let tries = 0;
+    go.addEventListener("click", async ()=>{
+      if(resolved) return;
+      const text = ta.value.trim(), min = item.min || 15;
+      if(text.length < min){ fb.className="fb bad"; fb.textContent="Write a little more. A full sentence or two."; return; }
+      go.disabled = true; fb.className="fb note"; fb.textContent="Reading your answer…";
+      const g = opts.practice ? null : await AI.grade(kid, item, text);
+      tries++;
+      if(g && !g.ok && tries < 2){ go.disabled=false; fb.className="fb bad"; fb.textContent=g.fb+" Fix it and submit again."; first=false; return; }
+      ta.disabled = true;
+      if(g && g.ok){ fb.className="fb good"; fb.textContent=g.fb; }
+      else if(g){ fb.className="fb note"; fb.textContent=g.fb+" Saved. A parent will read this one."; }
+      else { fb.className="fb note"; fb.textContent="Saved. A parent will read this one."; }
+      finish({first, value:{a:text.slice(0,900), ok: g ? g.ok : null, fb: g ? g.fb : ""}});
+    });
+    box.append(el("div", {style:"margin-top:10px"}, ta), el("div", {class:"row", style:"margin-top:8px"}, go), fb);
+  }
+  else if(item.t==="pick"){
+    const chosen = new Set(Store.get(kid).interests || []);
+    const wrap = el("div", {class:"chips"});
+    item.opts.forEach(o=>{ const b = el("button", {type:"button", "aria-pressed": chosen.has(o) ? "true" : "false", onclick:()=>{ if(resolved) return; if(chosen.has(o)) chosen.delete(o); else chosen.add(o); b.setAttribute("aria-pressed", chosen.has(o) ? "true" : "false"); }}, o); wrap.append(b); });
+    const go = el("button", {class:"second", type:"button", onclick:()=>{ if(chosen.size<1){ fb.className="fb bad"; fb.textContent="Pick at least one."; return; } go.disabled=true; fb.className="fb good"; fb.textContent="Saved."; finish({first:true, interests:[...chosen]}); }}, "Save my picks");
+    box.append(wrap, el("div", {class:"row", style:"margin-top:10px"}, go), fb);
+  }
+  else if(item.t==="tally"){
+    const grid = el("div", {class:"tally-grid"});
+    const rows = [];
+    let guess = null;
+    if(item.predict){ guess = el("input", {type:"text", id:"tg-"+sid, "aria-label":"My guess for the most", maxlength:"20", style:"width:160px"}); box.append(el("div", {class:"row", style:"margin-top:10px"}, el("label", {for:"tg-"+sid}, "My guess for the most:"), guess)); }
+    for(let i=0;i<6;i++){ const nm = el("input", {type:"text", id:"tk-"+sid+"-"+i, placeholder:"Kind "+(i+1), "aria-label":"Kind "+(i+1), maxlength:"20"}); const ct = el("input", {type:"number", id:"tc-"+sid+"-"+i, min:"0", step:"1", placeholder:"How many", "aria-label":"How many of kind "+(i+1), style:"width:120px"}); rows.push([nm,ct]); grid.append(nm, ct); }
+    const out = el("div");
+    const go = el("button", {class:"second", type:"button", onclick:()=>{
+      if(resolved) return;
+      if(guess && !guess.value.trim()){ fb.className="fb bad"; fb.textContent="Type your guess first."; return; }
+      const cats=[], vals=[]; rows.forEach(([nm,ct])=>{ const n = parseInt(ct.value,10); if(nm.value.trim() && n>=0){ cats.push(nm.value.trim().slice(0,20)); vals.push(n); } });
+      if(cats.length < 2){ fb.className="fb bad"; fb.textContent="Fill in at least 2 kinds, each with a count."; return; }
+      fb.className=""; fb.textContent="";
+      out.replaceChildren(figure({k:"bar", title:"What I counted", cats, vals}));
+      const max = Math.max(...vals), sum = vals.reduce((a,b)=>a+b,0);
+      const sel = el("select", {id:"ts-"+sid, "aria-label":"Which kind had the most"}, el("option", {value:""}, "Choose…"), cats.map((c,i)=>el("option", {value:String(i)}, c)));
+      const tot = el("input", {type:"number", id:"tt-"+sid, "aria-label":"How many in all"});
+      const fb2 = el("div", {role:"status"});
+      const chk = el("button", {class:"second", type:"button", onclick:()=>{
+        if(resolved) return;
+        if(sel.value==="" || tot.value===""){ fb2.className="fb bad"; fb2.textContent="Answer both questions."; return; }
+        const okMost = vals[parseInt(sel.value,10)]===max, okTot = parseInt(tot.value,10)===sum;
+        if(okMost && okTot){ fb2.className="fb good"; fb2.textContent = guess ? "You guessed "+guess.value.trim()+". You counted the most "+cats[vals.indexOf(max)]+"." : "Yes. Does your notebook graph match this one?"; rows.forEach(r=>r.forEach(x=>x.disabled=true)); finish({first, value:{cats, vals, guess: guess ? guess.value.trim().slice(0,20) : null}}); }
+        else { first=false; fb2.className="fb bad"; fb2.textContent = !okMost ? "Look at the bars again. Which one is tallest? If two are tied, pick either." : "Add up all your counts again."; }
+      }}, "Check");
+      out.append(el("div", {class:"stack", style:"margin-top:10px"}, el("label", {for:"ts-"+sid}, "Which kind had the most? ", sel), el("label", {for:"tt-"+sid}, "How many did you count in all? ", tot), el("div", null, chk), fb2));
+    }}, "Draw my graph");
+    box.append(grid, el("div", {class:"row", style:"margin-top:10px"}, go), fb, out);
+  }
+  else if(item.t==="react"){
+    const N = 8, data = {right:[], left:[]}; let predict = null;
+    const stage = el("div", {class:"stack", style:"margin-top:10px"});
+    const padBtn = el("button", {type:"button", class:"reactpad"}, "");
+    const run = (hand)=>{
+      stage.replaceChildren(el("p", null, el("b", null, "Use your "+hand.toUpperCase()+" hand. "), "Click the box the moment it turns green. Try "+(data[hand].length+1)+" of "+N+"."), padBtn);
+      let t0 = null, timer = null;
+      const wait = ()=> window.__FAST ? 30 : 1000 + Math.random()*2000;
+      const green = ()=>{ t0 = performance.now(); padBtn.className = "reactpad go"; padBtn.textContent = "Click!"; };
+      padBtn.className = "reactpad"; padBtn.textContent = "Wait for green…";
+      padBtn.onclick = ()=>{
+        if(t0===null){ clearTimeout(timer); padBtn.textContent = "Too soon. Wait for green…"; timer = setTimeout(green, wait()); return; }
+        data[hand].push(Math.round(performance.now()-t0));
+        if(data[hand].length < N) run(hand); else if(hand==="right") between(); else results();
+      };
+      timer = setTimeout(green, wait());
+    };
+    const between = ()=> stage.replaceChildren(el("p", null, el("b", null, "Right hand done. "), "Now switch to your LEFT hand."), el("div", null, el("button", {class:"second", type:"button", onclick:()=>run("left")}, "Ready")));
+    const results = ()=>{
+      const mr = median(data.right), ml = median(data.left);
+      const sel = el("select", {id:"rs-"+sid, "aria-label":"Which hand was faster"}, el("option", {value:""}, "Choose…"), el("option", {value:"right"}, "Right hand"), el("option", {value:"left"}, "Left hand"), el("option", {value:"tie"}, "Exactly the same"));
+      const fb2 = el("div", {role:"status"});
+      const chk = el("button", {class:"second", type:"button", onclick:()=>{
+        if(resolved || sel.value==="") return;
+        const truth = mr<ml ? "right" : ml<mr ? "left" : "tie";
+        if(sel.value===truth){ sel.disabled = true; fb2.className="fb good"; fb2.textContent = "Yes. A lower time means a faster click. You predicted: "+predict+"."; finish({first, value:{right:data.right, left:data.left, predict, mr, ml}}); }
+        else { first = false; fb2.className="fb bad"; fb2.textContent = "Look again. Lower times are faster."; }
+      }}, "Check");
+      stage.replaceChildren(el("p", null, el("b", null, "Your data. "), "Each dot is one click."), figure({k:"strip2", la:"Right", lb:"Left", a:data.right, b:data.left}),
+        el("p", null, "Middle time, right hand: "+mr+" ms. Middle time, left hand: "+ml+" ms."),
+        el("label", {for:"rs-"+sid}, "Going by the middle times, which hand was faster? ", sel), el("div", null, chk), fb2);
+    };
+    const choices = el("div", {class:"chips"});
+    ["My right hand","My left hand","No real difference"].forEach(o=> choices.append(el("button", {type:"button", onclick:()=>{ predict = o; run("right"); }}, o)));
+    stage.append(el("p", null, "First, your prediction. Which hand will be faster?"), choices);
+    box.append(stage, fb);
+  }
+  return box;
+}
+
+/* ============================== VIEWS ============================== */
+const app = document.getElementById("app");
+let VIEW = {name:"home"}, timerId = null;
+function stopTimer(){ if(timerId){ clearInterval(timerId); timerId=null; } }
+function go(v){ stopTimer(); VIEW = v; render(); window.scrollTo(0,0); }
+function currentKid(){ return VIEW.kid || null; }
+
+function renderSync(){
+  const s = document.getElementById("sync"); if(!s) return;
+  s.className = "sync";
+  if(!Store.tried){ s.textContent = "Checking for saved progress…"; return; }
+  if(Store.mode==="cloud" && Store.kind==="github") s.replaceChildren("Progress is ", el("b", null, "saved to your private GitHub repo"), " and follows you to other devices.");
+  else if(Store.mode==="cloud") s.replaceChildren("Progress is ", el("b", null, "saved to this account"), " and follows you to other devices.");
+  else if(Store.mode==="device" && Store.kind==="github"){ s.className="sync warn"; s.replaceChildren("Progress is ", el("b", null, "saved on this device only"), Store.err===401 ? ". The GitHub token stopped working. A parent can fix it in Parent view." : ". GitHub is not reachable right now. It will catch up next time."); }
+  else if(Store.mode==="device" && !inClaude()) s.replaceChildren("Progress is ", el("b", null, "saved on this device"), ". It does not follow you to other devices.");
+  else if(Store.mode==="device"){ s.className="sync warn"; s.replaceChildren("Progress is ", el("b", null, "saved on this device only"), ". Account storage is not reachable right now."); }
+  else if(Store.mode==="none"){ s.className="sync warn"; s.textContent = "Progress cannot be saved in this view. Use your notebook as the record and tell a parent."; }
+  else s.textContent = "Checking for saved progress…";
+}
+function renderNav(){
+  const nav = document.getElementById("nav"); const kid = currentKid();
+  const mk = (label, v, cur)=> el("button", {type:"button", "aria-current": cur ? "true" : null, onclick:()=>go(v)}, label);
+  const kids = [];
+  if(kid){ kids.push(mk("Today", {name:"kid", kid}, VIEW.name==="kid"), mk("My path", {name:"path", kid}, VIEW.name==="path")); }
+  kids.push(mk("Switch person", {name:"home"}, VIEW.name==="home"), mk("Parent", {name:"parent"}, VIEW.name==="parent"));
+  nav.replaceChildren(...kids);
+  document.body.classList.toggle("kid-k4", kid==="k4");
+}
+function render(){
+  renderNav(); renderSync();
+  const v = VIEW;
+  const node = v.name==="home" ? viewHome() : v.name==="kid" ? viewKid(v.kid) : v.name==="path" ? viewPath(v.kid) : v.name==="session" ? viewSession(v) : v.name==="gate" ? viewGate(v) : v.name==="cards" ? viewCards(v.kid) : v.name==="parent" ? viewParent() : viewHome();
+  app.replaceChildren(node);
+  try{ const h = v.kid && (v.name==="kid") ? "#"+v.kid : v.name==="parent" ? "#parent" : v.name==="home" ? "" : null; if(h!==null && location.hash!==h) history.replaceState(null, "", h || location.pathname+location.search); }catch(e){}
+}
+
+function pips(n, of){ const w = el("div", {class:"pips", "aria-label": n+" of "+of+" sessions this week"}); for(let i=0;i<of;i++) w.append(el("span", {class:"pip"+(i<n ? " on" : "")})); return w; }
+function nextLabel(kid){ const p = position(kid); return p.kind==="session" ? p.session.title : p.kind==="gate" ? p.unit.gate.title : "All written sessions done"; }
+
+function viewHome(){
+  const cards = Object.keys(KIDS).map(kid=>{
+    const c = counts(kid);
+    const b = el("button", {type:"button", style:"border-color:var(--accent-"+KIDS[kid].tone+")", onclick:()=>{ go({name:"kid", kid}); Store.pull(kid).then(ch=>{ if(ch && VIEW.name==="kid" && VIEW.kid===kid) render(); }); }},
+      el("div", {class:"nm"}, KIDS[kid].name),
+      el("div", {class:"muted small"}, "Next: "+nextLabel(kid)),
+      el("div", {class:"row", style:"margin-top:10px"}, pips(Math.min(c.weekN, KIDS[kid].weekly), KIDS[kid].weekly), el("span", {class:"small muted"}, c.weekN+" of "+KIDS[kid].weekly+" this week")),
+      el("div", {class:"small muted", style:"margin-top:6px"}, c.total+" of "+c.authored+" sessions done"));
+    return b;
+  });
+  return el("div", {class:"stack"},
+    el("h1", null, "Who is working today?"),
+    el("div", {class:"who"}, cards),
+    el("p", {class:"muted small"}, "One short session at a time. Each one ends with a quick check. Three a week is the goal. More is welcome."));
+}
+
+function viewKid(kid){
+  const k = KIDS[kid], st = Store.get(kid), c = counts(kid), p = position(kid);
+  const wrap = el("div", {class:"stack"});
+  wrap.append(el("div", {class:"row", style:"justify-content:space-between"}, el("h1", null, k.named ? "Hi, "+k.name+"." : "Hi."), el("div", {class:"row"}, pips(Math.min(c.weekN,k.weekly), k.weekly), el("span", {class:"small muted"}, c.weekN+" of "+k.weekly+" this week"))));
+  if(c.dayStreak>1 || c.weekStreak>0) wrap.append(el("div", {class:"row"}, c.dayStreak>1 ? el("span", {class:"pill now"}, c.dayStreak+" days in a row") : null, c.weekStreak>0 ? el("span", {class:"pill good"}, c.weekStreak+" week"+(c.weekStreak>1?"s":"")+" on target") : null));
+  if(p.kind==="session"){
+    const s = p.session;
+    wrap.append(el("section", {class:"card next stack"},
+      el("div", {class:"eyebrow"}, p.unit.title),
+      el("h2", null, s.title),
+      el("p", {class:"muted"}, s.mins+" minutes. "+k.needs),
+      c.todayN>=1 ? el("p", {class:"small muted"}, c.todayN+" done today. Keep going if you want to.") : null,
+      el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>startSession(kid, s.id)}, c.due ? "Start: warm-up, then session" : "Start session"),
+        k.age<10 ? el("button", {class:"second", type:"button", onclick:()=>startSession(kid, s.id, false, true)}, "I did it from my card") : null,
+        el("button", {class:"ghost", type:"button", onclick:()=>go({name:"gate", kid, gid:p.unit.gate.id})}, "Know this unit already? Take the gate quiz"))));
+  } else if(p.kind==="gate"){
+    const gsx = gateState(kid, p.unit);
+    wrap.append(el("section", {class:"card next stack"},
+      el("div", {class:"eyebrow"}, p.unit.title),
+      el("h2", null, p.unit.gate.title+": show what you know"),
+      el("p", {class:"muted"}, "You finished every session in this unit. Pass the gate to unlock the next one."),
+      el("div", {class:"row"}, el("span", {class:"pill "+(gsx.quizOk?"good":"warn")}, gsx.quizOk ? "Quiz passed" : "Quiz: need "+gsx.need+" of "+gsx.n), p.unit.gate.product ? el("span", {class:"pill "+(gsx.prodOk?"good":"warn")}, gsx.prodOk ? "Project signed off" : "Project: needs a parent sign-off") : null),
+      el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"gate", kid, gid:p.unit.gate.id})}, "Open the gate"))));
+  } else {
+    wrap.append(el("section", {class:"card next stack"},
+      el("h2", null, "You finished everything that is written so far."),
+      el("p", null, "Tell a parent. The next unit"+(p.unit ? " ("+p.unit.title+")" : "")+" gets written from how you did on this one.")));
+  }
+  if(c.due) wrap.append(el("section", {class:"card row", style:"justify-content:space-between"}, el("div", null, el("h3", null, "Quick review"), el("p", {class:"small muted"}, Math.min(c.due,5)+" question"+(c.due>1?"s":"")+" from earlier sessions. About two minutes.")), el("button", {class:"second", type:"button", onclick:()=>startSession(kid, null)}, "Do a quick review")));
+  if(kid==="k7" && st.done.s03 && !st.done.s11) wrap.append(el("div", {class:"card"}, el("b", null, "Time log: "), "fill in today's row in your notebook tonight. One minute."));
+  const wins = winsOf(kid), nextWin = wins.find(w=>!w.got);
+  if(wins.length){
+    const got = wins.filter(w=>w.got);
+    wrap.append(el("section", {class:"card stack"}, el("h3", null, "What you can do now"),
+      got.length ? el("ul", {style:"margin:0; padding-left:20px"}, got.map(w=>el("li", null, w.label))) : el("p", {class:"muted small"}, "Your first one comes with your first session."),
+      nextWin ? el("p", {class:"small muted"}, "Next: "+nextWin.label.charAt(0).toLowerCase()+nextWin.label.slice(1)+".") : null));
+  }
+  const pct = c.authored ? Math.round(100*(c.total+c.skipped)/c.authored) : 0;
+  wrap.append(el("section", {class:"card stack"},
+    el("div", {class:"row", style:"justify-content:space-between"}, el("h3", null, "Sessions written so far"), el("span", {class:"small muted"}, c.total+" of "+c.authored+" done"+(c.skipped ? ", "+c.skipped+" skipped by passing a gate" : ""))),
+    el("div", {class:"bar-outer"}, el("div", {class:"bar-inner", style:"width:"+pct+"%"})),
+    el("div", null, el("button", {class:"ghost", type:"button", onclick:()=>go({name:"path", kid})}, "See my whole path"))));
+  return wrap;
+}
+
+function viewPath(kid){
+  const st = Store.get(kid), p = position(kid);
+  const wrap = el("div", {class:"stack"}, el("h1", null, KIDS[kid].name+"'s path"));
+  let locked = false;
+  for(const ph of TRACKS[kid].phases){
+    const sec = el("section", {class:"card stack"}, el("div", {class:"eyebrow"}, "Phase "+ph.n+" · "+ph.when), el("h2", null, ph.title), el("p", {class:"muted"}, ph.blurb));
+    if(!ph.units.length) sec.append(el("p", {class:"small muted"}, "Written closer to the time."));
+    for(const u of ph.units){
+      if(u.planned){ sec.append(el("div", {class:"planned stack"}, el("h3", null, u.title), el("p", {class:"small muted"}, "Coming up: "+u.list.join(" · ")), el("p", {class:"small muted"}, u.note))); locked = true; continue; }
+      const live = p.unit && p.unit.id===u.id;
+      const box = el("div", {class:"path-unit"+(live?" live":"")}, el("h3", null, u.title));
+      for(const s of u.sessions){
+        const done = !!st.done[s.id], isNow = p.kind==="session" && p.session.id===s.id;
+        box.append(el("div", {class:"srow"},
+          done ? el("button", {type:"button", title:"Practice this session again", onclick:()=>startSession(kid, s.id, true)}, s.title) : el("span", {class: locked||!isNow ? "muted" : ""}, s.title),
+          el("span", {class:"pill "+(done?"good":isNow?"now":"")}, done ? "Done" : isNow ? "Next" : s.mins+" min")));
+      }
+      const g = gateState(kid, u);
+      box.append(el("div", {class:"srow"}, el("b", null, u.gate.title), g.passed ? el("span", {class:"pill good"}, "Passed") : live ? el("button", {type:"button", onclick:()=>go({name:"gate", kid, gid:u.gate.id})}, "Take it now") : el("span", {class:"pill"}, "Locked")));
+      sec.append(box);
+      if(!g.passed) locked = true;
+    }
+    wrap.append(sec);
+  }
+  return wrap;
+}
+
+/* ---------------- session ---------------- */
+function startSession(kid, sid, practice, card){
+  const st = Store.get(kid), t = today();
+  const due = practice ? [] : Object.entries(st.rev).filter(([k,r])=> r.due <= t && itemByKey(kid,k)).sort((a,b)=> a[1].due < b[1].due ? -1 : 1).slice(0, sid ? 3 : 5).map(([k])=>itemByKey(kid,k));
+  go({name:"session", kid, sid, practice:!!practice, stage: due.length ? "warm" : (sid ? (card ? "check" : "task") : "done"), card:!!card, warm:due, started:Date.now(), results:{}, chat:[]});
+}
+function showBlock(kid, s){
+  if(!s.show) return null;
+  const parts = s.show.from.split("."), val = (Store.get(kid).ans[parts[0]]||{})[parts[1]];
+  if(val && s.show.kind==="tally" && val.cats) return el("div", null, el("b", null, "The graph the page drew from your counts:"), figure({k:"bar", title:"What I counted", cats:val.cats, vals:val.vals}));
+  if(val && s.show.kind==="react" && val.right) return el("div", {class:"small"}, el("b", null, "Your reaction times from session 1, in milliseconds"), el("p", null, "Right: "+val.right.join(", ")), el("p", null, "Left: "+val.left.join(", ")));
+  return null;
+}
+function viewSession(v){
+  const kid = v.kid, found = v.sid ? findSession(kid, v.sid) : null, s = found && found.session;
+  const wrap = el("div", {class:"stack"});
+  if(v.stage==="warm"){
+    wrap.append(el("div", {class:"eyebrow"}, "Warm-up"), el("h1", null, "First, "+v.warm.length+" quick question"+(v.warm.length>1?"s":"")+" from before"));
+    const card = el("section", {class:"card stack"}); let left = v.warm.length;
+    const nextBtn = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{ if(!s) logReview(kid); Store.save(kid); v.stage = s ? (v.card ? "check" : "task") : "done"; v.started = Date.now(); render(); window.scrollTo(0,0); }}, s ? "On to today's session" : "Done");
+    v.warm.forEach(w=> card.append(renderItem(kid, "warm", w.item, (res)=>{ const stt = Store.get(kid); stt.stats.rn++; if(res.first) stt.stats.rok++; schedule(kid, w.key, res.first); Store.save(kid); if(--left===0) nextBtn.disabled=false; }, {oneShot:true})));
+    wrap.append(card, el("div", null, nextBtn));
+    return wrap;
+  }
+  if(v.stage==="task"){
+    const young = KIDS[kid].age < 10;
+    const tm = el("div", {class:"timer", "aria-live":"off"}, pad(s.mins)+":00");
+    const tick = ()=>{ const left = s.mins*60 - Math.floor((Date.now()-v.started)/1000); if(left<=0){ tm.textContent="Time"; tm.classList.add("up"); } else tm.textContent = pad(Math.floor(left/60))+":"+pad(left%60); };
+    stopTimer(); timerId = setInterval(tick, 1000); tick();
+    wrap.append(el("div", {class:"row", style:"justify-content:space-between"}, el("div", null, el("div", {class:"eyebrow"}, found.unit.title + (v.practice ? " · practice" : "")), el("h1", null, s.title)), tm));
+    const ol = el("ol", {class:"steps"});
+    if(v.stepIdx==null) v.stepIdx = young ? 0 : s.steps.length-1;
+    const more = v.stepIdx < s.steps.length-1;
+    s.steps.forEach((step,si)=>{ if(si > v.stepIdx) return; const text = typeof step==="string" ? step : step.t; ol.append(el("li", null, el("div", null, el("span", null, text), AI.canSpeak() && young ? el("button", {class:"say", type:"button", onclick:()=>AI.speak(text)}, "Read it to me") : null, (typeof step!=="string" && step.fig) ? figure(step.fig) : null))); });
+    const card = el("section", {class:"card stack"}, s.link ? el("div", null, el("a", {class:"link", href:s.link.u, target:"_blank", rel:"noopener"}, s.link.t)) : null, ol);
+    card.append(showBlock(kid, s));
+    wrap.append(card);
+    if(more) wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ v.stepIdx++; render(); const lis = document.querySelectorAll("ol.steps > li"); if(lis.length) lis[lis.length-1].scrollIntoView({block:"center"}); }}, "Next step"), el("span", {class:"small muted"}, "Step "+(v.stepIdx+1)+" of "+s.steps.length)));
+    else wrap.append(el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>{ stopTimer(); v.stage="check"; v.mins = Math.max(1, Math.round((Date.now()-v.started)/60000)); render(); window.scrollTo(0,0); }}, "I did it. Go to the exit check"), el("span", {class:"small muted"}, "When the timer runs out, finish your thought and move on.")));
+    if(AI.sample) wrap.append(coachBox(kid, s, v));
+    return wrap;
+  }
+  if(v.stage==="check"){
+    wrap.append(el("div", {class:"eyebrow"}, "Exit check"), el("h1", null, s.title));
+    const card = el("section", {class:"card stack"}); let left = s.check.length;
+    if(v.card) card.append(showBlock(kid, s));
+    const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>finishSession(v, s)}, v.practice ? "Finish practice" : "Finish session");
+    s.check.forEach(it=> card.append(renderItem(kid, s.id, it, (res)=>{ v.results[it.id] = res; if(--left===0) fin.disabled=false; }, {practice:v.practice})));
+    wrap.append(card, el("div", null, fin));
+    return wrap;
+  }
+  // done
+  const c = counts(kid);
+  wrap.append(el("section", {class:"card next stack"},
+    el("h1", null, v.practice ? "Practice done." : s ? "Session done." : "Review done."),
+    v.practice ? null : el("div", {class:"row"}, pips(Math.min(c.weekN, KIDS[kid].weekly), KIDS[kid].weekly), el("span", null, c.weekN+" of "+KIDS[kid].weekly+" this week")),
+    (!v.practice && s) ? selfReport(kid, s.id) : null,
+    (!v.practice && s && v.newWin) ? el("p", {class:"fb good"}, "New: you can now "+v.newWin.charAt(0).toLowerCase()+v.newWin.slice(1)+".") : null,
+    (!v.practice && s) ? el("p", {class:"muted"}, "Next up: "+nextLabel(kid)+".") : null,
+    el("div", {class:"row"}, (!v.practice && s && position(kid).kind==="session") ? el("button", {class:"primary", type:"button", onclick:()=>startSession(kid, position(kid).session.id)}, "Keep going") : null,
+      el("button", {class: (!v.practice && s && position(kid).kind==="session") ? "second" : "primary", type:"button", onclick:()=>go({name:"kid", kid})}, (!v.practice && s) ? "Done for today" : "Back to today"))));
+  return wrap;
+}
+function selfReport(kid, sid){
+  const st = Store.get(kid), d = st.done[sid]; if(!d) return null;
+  const rowOf = (label, field, opts)=>{ const chips = el("div", {class:"chips", style:"margin-top:4px"}); opts.forEach((o,i)=>{ const b = el("button", {type:"button", "aria-pressed": d[field]===i ? "true" : "false", onclick:()=>{ d[field] = i; Store.save(kid); chips.querySelectorAll("button").forEach((x,xi)=>x.setAttribute("aria-pressed", xi===i ? "true" : "false")); }}, o); chips.append(b); }); return el("div", null, el("span", {class:"small muted"}, label), chips); };
+  return el("div", {class:"stack"}, rowOf("Did you do it by yourself?", "solo", SOLO), rowOf("How was it?", "feel", FEEL));
+}
+const SOLO = ["All by myself","A little help","A grown-up sat with me"], FEEL = ["Fun","Fine","Boring","Too hard"];
+function finishSession(v, s){
+  const kid = v.kid;
+  if(!s.check.every(it=>v.results[it.id])) return;
+  if(!v.practice){
+    const st = Store.get(kid); let pts = 0, auto = 0; st.ans[s.id] = st.ans[s.id] || {};
+    const again = !!st.done[s.id];
+    for(const it of s.check){
+      const r = v.results[it.id] || {};
+      if(it.t==="mc" || it.t==="num"){ auto++; st.stats.fn++; if(r.first){ pts++; st.stats.fok++; } schedule(kid, s.id+"."+it.id, !!r.first); }
+      if(r.value) st.ans[s.id][it.id] = r.value;
+      if(r.interests) st.interests = r.interests;
+    }
+    const w = (TRACKS[kid].wins||[]).find(x=>x.after===s.id); if(w && !st.done[s.id]) v.newWin = w.label;
+    st.done[s.id] = {t:Date.now(), first:pts, auto, mins:v.mins||s.mins}; if(v.card) st.done[s.id].card = 1;
+    if(!again) st.log.push({d:today(), sid:s.id});
+    Store.save(kid);
+  }
+  v.stage = "done"; render(); window.scrollTo(0,0);
+}
+function coachBox(kid, s, v){
+  const log = el("div", {class:"chat", "aria-live":"polite"});
+  v.chat.forEach(m=> log.append(el("div", {class:m.who==="me"?"me":"co"}, m.text)));
+  const inp = el("input", {type:"text", id:"coach-q", placeholder:"What are you stuck on?", "aria-label":"Question for the coach", style:"flex:1; min-width:180px", maxlength:"300"});
+  const send = el("button", {class:"second", type:"button"}, "Ask");
+  const ask = async ()=>{
+    const q = inp.value.trim(); if(!q) return;
+    if(v.chat.filter(m=>m.who==="me").length >= 6){ log.append(el("div", {class:"co"}, "That is six questions. Give it your best try, or ask a parent.")); return; }
+    inp.value=""; send.disabled=true; v.chat.push({who:"me", text:q}); log.append(el("div", {class:"me"}, q));
+    const wait = el("div", {class:"co muted"}, "Thinking…"); log.append(wait);
+    const a = await AI.coach(kid, s, v.chat.slice(0,-1), q);
+    const text = a || "The coach cannot answer right now. Try the step again, or ask a parent.";
+    wait.className="co"; wait.textContent = text; v.chat.push({who:"co", text}); send.disabled=false;
+  };
+  send.addEventListener("click", ask); inp.addEventListener("keydown", e=>{ if(e.key==="Enter") ask(); });
+  return el("details", {class:"card"}, el("summary", null, "Stuck? Ask the coach for a hint"), el("p", {class:"small muted", style:"margin-top:8px"}, "The coach gives hints. It does not give answers."), log, el("div", {class:"row", style:"margin-top:10px"}, inp, send));
+}
+
+/* ---------------- gate ---------------- */
+function viewGate(v){
+  const kid = v.kid, f = findGate(kid, v.gid), u = f.unit, g = f.gate, gx = gateState(kid, u), st = Store.get(kid);
+  const wrap = el("div", {class:"stack"}, el("div", {class:"eyebrow"}, u.title), el("h1", null, g.title));
+  if(v.quiz){
+    const q = v.quiz; const card = el("section", {class:"card stack"}); let left = q.items.length;
+    const fin = el("button", {class:"primary", type:"button", disabled:true, onclick:()=>{
+      const score = q.items.filter(it=>q.res[it.key]).length; const missed = [...new Set(q.items.filter(it=>!q.res[it.key] && it.sid).map(it=>it.sid))];
+      const gs = st.gates[g.id] = st.gates[g.id] || {}; gs.quiz = {best: Math.max((gs.quiz||{}).best||0, score), last:score, n:q.items.length, t:Date.now(), d:today(), tries:((gs.quiz||{}).tries||0)+1, missed};
+      Store.save(kid); v.quiz = null; v.justScored = {score, n:q.items.length, missed}; render(); window.scrollTo(0,0);
+    }}, "See my score");
+    q.items.forEach(it=> card.append(renderItem(kid, "gate", it.item, (res)=>{ q.res[it.key] = !!res.first; if(--left===0) fin.disabled=false; }, {oneShot:true})));
+    wrap.append(el("p", {class:"muted"}, "One try per question. You need "+gx.need+" of "+gx.n+"."), card, el("div", null, fin));
+    return wrap;
+  }
+  if(v.justScored){
+    const j = v.justScored, ok = j.score >= gx.need;
+    wrap.append(el("section", {class:"card stack"}, el("h2", null, j.score+" of "+j.n), el("p", {class:"fb "+(ok?"good":"note")}, ok ? "Quiz passed." : "Not yet. You need "+gx.need+". Practice the sessions below, then try again."),
+      (!ok && j.missed.length) ? el("div", null, el("p", null, "Practice these sessions first:"), el("ul", null, j.missed.map(sid=>{ const fs = findSession(kid, sid); return el("li", null, el("button", {class:"ghost", type:"button", onclick:()=>startSession(kid, sid, true)}, fs ? fs.session.title : sid)); }))) : null));
+  }
+  wrap.append(el("section", {class:"card stack"},
+    el("div", {class:"row", style:"justify-content:space-between"}, el("h3", null, "1. Quiz"), el("span", {class:"pill "+(gx.quizOk?"good":"warn")}, gx.quizOk ? "Passed" : "Need "+gx.need+" of "+gx.n)),
+    el("p", {class:"muted small"}, gx.n+" questions. Some are new, some come from the sessions. Best so far: "+((gx.gs.quiz||{}).best||0)+"."),
+    gx.quizOk ? null : el("div", null, el("button", {class:"primary", type:"button", onclick:()=>{ v.justScored=null; const all = autoItems(u), fresh = all.filter(i=>!i.sid), seen = shuffle(all.filter(i=>i.sid)); v.quiz = {items: shuffle([...fresh, ...seen.slice(0, Math.max(0, gx.n-fresh.length))]).slice(0, gx.n), res:{}}; render(); window.scrollTo(0,0); }}, (gx.gs.quiz ? "Try the quiz again" : "Start the quiz")))));
+  if(g.product){
+    wrap.append(el("section", {class:"card stack"},
+      el("div", {class:"row", style:"justify-content:space-between"}, el("h3", null, "2. Project"), el("span", {class:"pill "+(gx.prodOk?"good":"warn")}, gx.prodOk ? "Signed off" : "Needs a parent")),
+      el("p", null, g.product.label), el("p", {class:"small muted"}, "A parent checks it against this list in the Parent view:"), el("ul", {class:"small"}, g.product.rubric.map(r=>el("li", null, r)))));
+  }
+  if(gx.passed) wrap.append(el("section", {class:"card next stack"}, el("h2", null, "Gate passed."), el("div", null, el("button", {class:"primary", type:"button", onclick:()=>go({name:"kid", kid})}, "Back to today"))));
+  return wrap;
+}
+
+/* ---------------- parent ---------------- */
+let parentOpen = false;
+function viewParent(){
+  const ps = Store.get("parent");
+  const wrap = el("div", {class:"stack"}, el("h1", null, "Parent view"));
+  if(!parentOpen){
+    const inp = el("input", {type:"password", id:"pcode", inputmode:"numeric", maxlength:"8", "aria-label":"Parent code", autocomplete:"off"});
+    const fb = el("div", {role:"status"});
+    const act = ()=>{ const val = inp.value.trim(); if(val.length<4){ fb.className="fb bad"; fb.textContent="Use at least 4 characters."; return; }
+      if(!ps.code){ ps.code = val; Store.save("parent"); parentOpen = true; render(); }
+      else if(ps.code===val){ parentOpen = true; render(); }
+      else { fb.className="fb bad"; fb.textContent="That is not the code."; } };
+    inp.addEventListener("keydown", e=>{ if(e.key==="Enter") act(); });
+    wrap.append(el("section", {class:"card stack"}, el("label", {for:"pcode"}, ps.code ? "Enter the parent code." : "Choose a parent code. It keeps kids out of the sign-offs. It is a speed bump, not security."), el("div", {class:"row"}, inp, el("button", {class:"primary", type:"button", onclick:act}, ps.code ? "Open" : "Set code")), fb));
+    if(!ps.code && !inClaude() && Store.kind!=="github") wrap.append(syncCard(true));
+    return wrap;
+  }
+  { const nmIn = {};
+    wrap.append(el("section", {class:"card stack"}, el("h3", null, "Names"),
+      el("p", {class:"small muted"}, "Names are stored with the progress, not in the page itself."),
+      el("div", {class:"row"}, Object.keys(KIDS).map(kk=>{ const i = el("input", {type:"text", maxlength:"20", placeholder:KIDS[kk].dflt, "aria-label":"Name for the "+KIDS[kk].dflt.toLowerCase(), value:(ps.names||{})[kk]||""}); nmIn[kk] = i; return i; }),
+        el("button", {class:"second", type:"button", onclick:()=>{ ps.names = {}; for(const kk of Object.keys(nmIn)){ const val = nmIn[kk].value.trim(); if(val) ps.names[kk] = val; } Store.save("parent"); render(); }}, "Save names")))); }
+  for(const kid of Object.keys(KIDS)){
+    const st = Store.get(kid), c = counts(kid), p = position(kid), t = today();
+    const last28 = st.log.filter(e=> e.d >= addDays(t,-27)).length;
+    const pctf = c.firstAuto ? Math.round(100*c.firstOk/c.firstAuto)+"%" : "–", pctr = st.stats.rn ? Math.round(100*st.stats.rok/st.stats.rn)+"%" : "–";
+    const dn = Object.values(st.done), solo = SOLO.map((_,i)=>dn.filter(x=>x.solo===i).length), feel = FEEL.map((_,i)=>dn.filter(x=>x.feel===i).length);
+    const sec = el("section", {class:"card stack"}, el("h2", null, KIDS[kid].name),
+      el("div", {class:"kpis"},
+        el("div", {class:"kpi"}, el("b", null, c.weekN+" / "+KIDS[kid].weekly), el("span", null, "sessions this week")),
+        el("div", {class:"kpi"}, el("b", null, String(last28)), el("span", null, "sessions, last 4 weeks")),
+        el("div", {class:"kpi"}, el("b", null, String(c.weekStreak)), el("span", null, "weeks in a row on target")),
+        el("div", {class:"kpi"}, el("b", null, pctf), el("span", null, "exit checks right first try")),
+        el("div", {class:"kpi"}, el("b", null, pctr), el("span", null, "review questions right")),
+        el("div", {class:"kpi"}, el("b", null, c.total+" / "+c.authored), el("span", null, "sessions done"+(c.skipped ? " ("+c.skipped+" more skipped by test-out)" : ""))),
+        el("div", {class:"kpi"}, el("b", null, solo[0]+" / "+(solo[0]+solo[1]+solo[2])), el("span", null, "done alone, by the kid's own report"))),
+      el("p", {class:"small"}, el("b", null, "How it felt: "), FEEL.map((f,i)=>f.toLowerCase()+" "+feel[i]).join(", ")),
+      el("p", null, el("b", null, "Now at: "), nextLabel(kid), p.kind==="end" ? " (needs the next unit written)" : ""),
+      st.interests.length ? el("p", {class:"small"}, el("b", null, "Topics picked: "), st.interests.join(", ")) : null);
+    // gates
+    const rows = [];
+    for(const u of unitsOf(kid)){ if(!u.sessions) continue; const g = gateState(kid, u);
+      const quizTxt = g.gs.quiz ? "best "+g.gs.quiz.best+" of "+g.gs.quiz.n+", "+g.gs.quiz.tries+" tr"+(g.gs.quiz.tries>1?"ies":"y") : "not taken";
+      let prod = el("span", {class:"muted"}, "none");
+      if(u.gate.product){
+        if(g.gs.sign) prod = el("span", {class:"pill good"}, "Signed "+new Date(g.gs.sign.t).toLocaleDateString());
+        else { const boxes = u.gate.product.rubric.map((r,i)=>{ const id="rb-"+u.gate.id+"-"+i; return el("div", null, el("input", {type:"checkbox", id}), " ", el("label", {for:id}, r)); });
+          const btn = el("button", {class:"second", type:"button", onclick:()=>{ const all = boxes.every(b=>b.querySelector("input").checked); if(!all){ msg.className="fb bad"; msg.textContent="Tick every item, or hand it back for another pass."; return; } const gs = st.gates[u.gate.id] = st.gates[u.gate.id] || {}; gs.sign = {t:Date.now()}; Store.save(kid); render(); }}, "Sign off");
+          const msg = el("div", {role:"status"});
+          prod = el("div", {class:"stack small"}, el("b", null, u.gate.product.label), boxes, el("div", null, btn), msg); }
+      }
+      rows.push(el("tr", null, el("td", null, u.gate.title), el("td", null, el("span", {class:"pill "+(g.quizOk?"good":"")}, g.quizOk?"Passed":"Open"), " ", el("span", {class:"small muted"}, quizTxt)), el("td", null, prod)));
+    }
+    sec.append(el("div", {style:"overflow-x:auto"}, el("table", null, el("thead", null, el("tr", null, el("th", null, "Gate"), el("th", null, "Quiz"), el("th", null, "Project"))), el("tbody", null, rows))));
+    // written answers
+    const written = [];
+    for(const [sid, a] of Object.entries(st.ans)){ const fs = findSession(kid, sid); if(!fs) continue; for(const [iid, val] of Object.entries(a)){ if(val && typeof val.a==="string") written.push({t:(st.done[sid]||{}).t||0, title:fs.session.title, q:(fs.session.check.find(c=>c.id===iid)||{}).q||"", val}); } }
+    written.sort((a,b)=>b.t-a.t);
+    if(written.length){
+      const list = el("div", {class:"stack"});
+      written.slice(0,8).forEach(w=> list.append(el("div", {class:"item"}, el("div", {class:"row", style:"justify-content:space-between"}, el("b", {class:"small"}, w.title), el("span", {class:"pill "+(w.val.ok===true?"good":w.val.ok===false?"bad":"warn")}, w.val.ok===true ? "Coach: meets it" : w.val.ok===false ? "Coach: missing something" : "Not checked")), el("p", {class:"small muted"}, w.q), el("p", null, w.val.a), w.val.fb ? el("p", {class:"small muted"}, "Coach said: "+w.val.fb) : null)));
+      sec.append(el("details", null, el("summary", null, "Written answers ("+written.length+")"), el("div", {style:"margin-top:10px"}, list)));
+    }
+    const eraseBox = el("div", {class:"row"});
+    const eraseBtn = el("button", {class:"ghost", type:"button", onclick:()=>{ eraseBox.replaceChildren(el("span", {class:"small"}, "Erase all of "+KIDS[kid].name+"'s progress on every device? This cannot be undone."), el("button", {class:"second", type:"button", onclick:()=>{ Store.reset(kid); render(); }}, "Yes, erase"), el("button", {class:"ghost", type:"button", onclick:()=>render()}, "Cancel")); }}, "Erase "+KIDS[kid].name+"'s progress");
+    eraseBox.append(eraseBtn, el("span", {class:"small muted"}, "Use this after you have tried the sessions yourself."));
+    sec.append(el("div", {class:"row"}, el("button", {class:"second", type:"button", onclick:()=>go({name:"cards", kid})}, "Print "+KIDS[kid].name+"'s mission cards"), el("span", {class:"small muted"}, "Paper first. The screen is only for the check at the end.")));
+    sec.append(eraseBox);
+    wrap.append(sec);
+  }
+  const copyFb = el("span", {class:"small muted", role:"status"});
+  wrap.append(el("section", {class:"card stack"}, el("h3", null, "Weekly routine, 10 minutes"),
+    el("ol", {class:"small", style:"margin:0; padding-left:20px"}, el("li", null, "Check sessions this week. Under 3 means the time slot needs fixing, not the kid. Over 3 is fine: there is no cap."), el("li", null, "Read one written answer per kid. The coach is generous; you are the real check."), el("li", null, "Sign off any project that is waiting, with the kid next to you."), el("li", null, "First-try rate under 70% for two weeks means the pace is too fast. Ask Claude to slow the next unit.")),
+    el("div", {class:"row"}, el("button", {class:"second", type:"button", onclick:async ()=>{ try{ await navigator.clipboard.writeText(JSON.stringify({k7:Store.get("k7"), k4:Store.get("k4")})); copyFb.textContent="Copied."; }catch(e){ copyFb.textContent="Copy is blocked here."; } }}, "Copy all progress as text"), copyFb)));
+  if(!inClaude()) wrap.append(syncCard(false));
+  return wrap;
+}
+function syncCard(pre){
+  const sec = el("section", {class:"card stack"}, el("h3", null, pre ? "Already set up on another device?" : "Sync across devices"));
+  const c = GH.cfg();
+  if(c && Store.kind==="github"){
+    sec.append(el("p", {class:"small"}, "This device saves progress to the private GitHub repo ", el("b", null, c.repo), "."),
+      el("div", {class:"row"}, el("button", {class:"ghost", type:"button", onclick:()=>{ GH.setCfg(null); Store.db = null; Store.kind = ""; Store.err = null; Store.mode = Store.localOk ? "device" : "none"; renderSync(); render(); }}, "Disconnect this device"), el("span", {class:"small muted"}, "Progress already on this device stays here.")));
+    return sec;
+  }
+  const repo = el("input", {type:"text", id:"ghrepo", placeholder:"owner/repo", "aria-label":"GitHub repo, as owner/repo", autocomplete:"off", autocapitalize:"off", spellcheck:"false"});
+  const tok = el("input", {type:"password", id:"ghtok", placeholder:"token", "aria-label":"GitHub token", autocomplete:"off"});
+  const fb = el("div", {role:"status"});
+  const btn = el("button", {class:"second", type:"button", onclick:async ()=>{
+    const cfg = {repo:repo.value.trim().replace(/^https:\/\/github\.com\//, "").replace(/\/$/, ""), token:tok.value.trim()};
+    if(!/^[\w.-]+\/[\w.-]+$/.test(cfg.repo) || cfg.token.length < 20){ fb.className = "fb bad"; fb.textContent = "Enter the repo as owner/name, and paste the whole token."; return; }
+    btn.disabled = true; fb.className = "fb note"; fb.textContent = "Checking…";
+    let msg; try{ msg = await withTimeout(GH.test(cfg), 15000); }catch(e){ msg = "GitHub could not be reached. Check the connection and try again."; }
+    if(msg){ btn.disabled = false; fb.className = "fb bad"; fb.textContent = msg; return; }
+    GH.setCfg(cfg); Store.db = GH.db(cfg); Store.kind = "github";
+    for(const k of ["k7","k4","parent"]){ try{ await Store.pull(k); }catch(e){} }
+    renderSync(); render();
+  }}, "Connect");
+  sec.append(el("p", {class:"small muted"}, pre ? "Connect this device to your progress repo first. The parent code and all progress will come across." : "Progress can follow the kids between devices through a private GitHub repo that you own. Enter the repo, and a token that can write only to that repo. The token stays on this device."),
+    el("div", {class:"row"}, repo, tok, btn), fb);
+  return sec;
+}
+function viewCards(kid){
+  const k = KIDS[kid], wrap = el("div", {class:"stack"});
+  wrap.append(el("div", {class:"row noprint", style:"justify-content:space-between"}, el("h1", null, "Mission cards"), el("div", {class:"row"}, el("button", {class:"primary", type:"button", onclick:()=>window.print()}, "Print"), el("button", {class:"ghost", type:"button", onclick:()=>go({name:"parent"})}, "Back"))),
+    el("p", {class:"muted small noprint"}, "One card per session. The card is the whole mission, done on paper or with real things. The screen is only for the short check at the end."));
+  let n = 0;
+  for(const u of unitsOf(kid)){ if(!u.sessions) continue;
+    for(const s of u.sessions){ n++;
+      let hidden = false; const ol = el("ol", {class:"steps"});
+      s.steps.forEach(step=>{ const text = typeof step==="string" ? step : step.t, f = typeof step!=="string" && step.fig; let fig = null, note = null;
+        if(f){ if(f.hideCats || f.hideVals || f.hideTitle){ hidden = true; fig = figure(f); } else if(hidden) note = el("div", {class:"small muted"}, "The whole graph is in Data Lab. Guess first, then look."); else fig = figure(f); }
+        ol.append(el("li", null, el("div", null, el("span", null, text), fig, note))); });
+      wrap.append(el("section", {class:"card stack mcard"},
+        el("div", {class:"row", style:"justify-content:space-between"}, el("div", {class:"eyebrow"}, u.title+" · Mission "+n), el("span", {class:"small muted"}, s.mins+" minutes")),
+        el("h2", null, s.title),
+        el("p", {class:"small muted"}, "You need: "+k.needs.charAt(0).toLowerCase()+k.needs.slice(1)),
+        ol,
+        s.link ? el("p", {class:"small"}, "This mission uses CODAP on a computer. Open it from Data Lab.") : null,
+        el("p", {class:"small cardfoot"}, el("b", null, "Done? "), k.age<10 ? "Open Data Lab and tap “I did it from my card”. The check takes about two minutes." : "Open Data Lab and do the exit check.")));
+    } }
+  return wrap;
+}
+
+/* ============================== BOOT ============================== */
+(function boot(){
+  const h = (location.hash||"").replace("#","");
+  if(KIDS[h]) VIEW = {name:"kid", kid:h}; else if(h==="parent") VIEW = {name:"parent"};
+  render();
+  window.addEventListener("hashchange", ()=>{ const x = (location.hash||"").replace("#",""); if(KIDS[x] && !(VIEW.kid===x && VIEW.name!=="home")) go({name:"kid", kid:x}); });
+  Store.connect().then(async ()=>{
+    let changed = false;
+    for(const k of ["k7","k4","parent"]){ try{ if(await Store.pull(k)) changed = true; }catch(e){} }
+    if(!Store.db){ Store.mode = Store.setLocal("probe", {t:1}) ? "device" : "none"; }
+    renderSync();
+    if(changed && (VIEW.name==="home" || VIEW.name==="kid" || VIEW.name==="path" || VIEW.name==="parent")) render();
+  });
+  AI.connect().then(()=>{ if(VIEW.name==="session" && VIEW.stage==="task") render(); });
+  document.addEventListener("visibilitychange", async ()=>{
+    if(document.visibilityState!=="visible" || !Store.db) return;
+    let changed = false; for(const k of ["k7","k4","parent"]){ try{ if(await Store.pull(k)) changed = true; }catch(e){} }
+    renderSync(); if(changed && (VIEW.name==="home" || VIEW.name==="kid" || VIEW.name==="path")) render();
+  });
+})();
+</script>
+</body>
+</html>
