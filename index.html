@@ -166,6 +166,7 @@ details summary{min-height:44px; display:flex; align-items:center; cursor:pointe
   .brand small{display:none}
   body.in-session #sync:not(.warn){display:none}
 }
+a.about{display:inline-block; padding:10px 0; min-height:40px; color:var(--ink)}
 </style>
 </head>
 <body>
@@ -537,6 +538,8 @@ for(const kk of Object.keys(KIDS)){
   Object.defineProperty(KIDS[kk], "name", {get(){ return (Store.get("parent").names||{})[kk] || KIDS[kk].dflt; }});
 }
 const TOUCH = !!(window.matchMedia && window.matchMedia("(pointer:coarse)").matches), TAP = TOUCH ? "Tap" : "Click";
+const ABOUT = "https://sthaker.github.io/datalab/about.html";
+function aboutLink(){ return el("p", {class:"small"}, el("a", {class:"about", href:ABOUT, target:"_blank", rel:"noopener"}, "For parents: why this curriculum, and what has changed")); }
 function inClaude(){ return !!(window.claude && typeof window.claude.use==="function"); }
 
 /* ============================== GITHUB SYNC ==============================
@@ -1047,7 +1050,7 @@ function viewHome(){
     el("h1", null, "Who is working today?"),
     el("div", {class:"who"}, cards),
     el("p", {class:"muted small"}, "One short session at a time. Each one ends with a quick check. Three a week is the goal. More is welcome."),
-    el("div", {class:"tryentry"}, el("button", {class:"ghost", type:"button", id:"tryopen", onclick:()=>go({name:"tryout"})}, "Grown-ups: try the lessons"), el("span", {class:"small muted"}, "Open any session. Nothing here is saved or counted.")));
+    el("div", {class:"tryentry"}, el("button", {class:"ghost", type:"button", id:"tryopen", onclick:()=>go({name:"tryout"})}, "Grown-ups: try the lessons"), el("span", {class:"small muted"}, "Open any session. Nothing here is saved or counted.")), aboutLink());
 }
 
 function viewKid(kid){
@@ -1357,7 +1360,7 @@ function viewTryout(v){
 let parentOpen = false;
 function viewParent(){
   const ps = Store.get("parent");
-  const wrap = el("div", {class:"stack"}, el("h1", null, "Parent view"));
+  const wrap = el("div", {class:"stack"}, el("h1", null, "Parent view"), aboutLink());
   if(!parentOpen){
     const inp = el("input", {type:"password", id:"pcode", inputmode:"numeric", maxlength:"8", "aria-label":"Parent code", autocomplete:"off"});
     const fb = el("div", {role:"status"});

@@ -67,6 +67,9 @@ The full procedure, the only copy, is "Deploy the page" in `docs/OPERATIONS.md`.
 - Second-reviewer read (Codex, cold, `PEDAGOGY.md` and `AUTHORING.md` only) of the `s11`/`s12` rewrite on 10 November: "ship with listed edits"; the edits were applied (table layout per route, median defined, units in the question, the saved prediction shown, `s11.b` made route-neutral, range defined in `s12`).
 - Not verified: the hosted grader against both `s11` routes; a computer walkthrough of `s11` from an empty profile after a Unit 1A test-out; finger taps on a real iPad; a full session by a child; read-aloud audio; CODAP save and reopen (needed between `s11` and `s12`); dragging in CODAP; CODAP menu names against the live tool; the AI grader after its prompt was tightened; the hosted copy's database sync; mission cards on a real printer; tryout and stop/resume on a real device.
 
+## Parent-facing page
+`about.html` is what a parent reads: the rationale and a plain-language changelog. It is linked from Home and Parent view. **Every shipped change that a parent or kid would notice gets a dated line at the top of its "What has changed" list, in the same commit.** No names, no jargon, no function names.
+
 ## Lessons from the first day (keep doing these)
 
 - The first real user found two bugs in minutes that 24-session walkthroughs missed: `Node.append(null)` renders the word "null", and a step told the kid to "go to the exit check" to start an experiment. Tests now check visible text; copy still needs a human-eyes pass at phone size.
