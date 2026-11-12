@@ -83,7 +83,7 @@ Two rules specific to this track:
 
 | Id | Title | Min | The one idea | The kid produces | Check items |
 |---|---|---|---|---|---|
-| `m01` | Guess, then count | 10 | Guess first; a taller bar means more | 12 small things sorted by color; the page draws the bar graph | `tally` (predict), `mc` |
+| `m01` | Guess, then count | 10 | Guess first; a taller bar means more | A blind handful of small things sorted by color; the page draws the bar graph | `tally` (predict), `mc` |
 | `m02` | Mystery graph | 8 | A graph can be read like a puzzle | Spoken guesses as a bar graph of days per month is revealed in three stages | `mc` + fig ×2, `num` + fig |
 | `m03` | Tally time | 10 | Tally marks in bundles of five | A notebook tally of something at home | `tally`, `num` |
 | `m04` | Picture graph | 10 | A key says what each picture stands for | A picture graph of the tally, with a key | `num` ×2, `mc` |

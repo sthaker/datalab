@@ -218,6 +218,8 @@ A partly written unit is for scratch copies of `index.html` only (as in the work
 
 ## Pre-ship checklist for content
 
+- [ ] **Free-choice check.** For every step where the kid chooses the things, people or question, the task still works if the pick is all equal, all different, one kind only, or more kinds than the widget holds. Prediction steps must happen before the answer is knowable (a blind handful, not hand-picked items).
+
 - [ ] Ids are new and unique; no shipped id was renamed. Gate id is `g-` + unit id.
 - [ ] Every written unit has a `gate` with `n`, `extra`, and a pool of at least `n`.
 - [ ] Each `mc`/`num` item reads correctly with nothing but its own `q`, `opts` and `fig` in front of you. Read them in shuffled order to check.

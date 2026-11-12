@@ -345,9 +345,9 @@ k4:{ wins:[{after:"m01", label:"Turn a pile of things into a bar graph"},{after:
  { n:1, title:"Notice", when:"About 18 sessions", blurb:"Count things, read graphs like a detective, and tell what your own data shows.", units:[
   { id:"m1a", title:"Unit 1A: Graph detective", sessions:[
    { id:"m01", title:"Guess, then count", mins:10,
-     steps:["Grab 12 small things that come in 2 to 6 colors. LEGO bricks, crayons, beads or socks all work.",
-            "Before you count, guess. Which color is there the most of? Say your guess out loud.",
-            "Sort them into piles by color. Count each pile.",
+     steps:["Find a big pile of small things that come in a few colors: LEGO bricks, beads, buttons, socks or candy. Close your eyes and grab one big handful. Do not pick them one by one.",
+            "Look at your handful, but do not count yet. Guess: which color is there the most of? Say your guess out loud.",
+            "Sort them into piles by color. Count each pile. More than 6 colors? Put the smallest piles together and call them \"other\".",
             "Now type your guess and your counts. Watch what the page draws."],
      check:[
       {id:"a", t:"tally", predict:true, q:"Type your guess. Then type each color and how many."},
@@ -934,7 +934,7 @@ function renderItem(kid, sid, item, done, opts){
         if(resolved) return;
         if(sel.value==="" || tot.value===""){ fb2.className="fb bad"; fb2.textContent="Answer both questions."; return; }
         const okMost = vals[parseInt(sel.value,10)]===max, okTot = Number(tot.value)===sum;
-        if(okMost && okTot){ fb2.className="fb good"; fb2.textContent = guess ? "You guessed "+guess.value.trim()+". The most was "+cats[vals.indexOf(max)]+"." : "Yes. Does your notebook graph match this one?"; rows.forEach(r=>r.forEach(x=>x.disabled=true)); chk.disabled = true; sel.disabled = true; tot.disabled = true; finish({first, value:{cats, vals, guess: guess ? guess.value.trim().slice(0,20) : null}}); }
+        if(okMost && okTot){ fb2.className="fb good"; const tops = cats.filter((c,i)=>vals[i]===max); fb2.textContent = guess ? "You guessed "+guess.value.trim()+". "+(tops.length>1 ? "It was a tie for the most: "+tops.join(" and ")+". Ties happen in real data." : "The most was "+tops[0]+".") : "Yes. Does your notebook graph match this one?"; rows.forEach(r=>r.forEach(x=>x.disabled=true)); chk.disabled = true; sel.disabled = true; tot.disabled = true; finish({first, value:{cats, vals, guess: guess ? guess.value.trim().slice(0,20) : null}}); }
         else { first=false; fb2.className="fb bad"; fb2.textContent = !okMost ? "Look at the bars again. Which one is tallest? If two are tied, pick either." : "Add up all your counts again."; }
       }}, "Check");
       out.append(el("div", {class:"stack", style:"margin-top:10px"}, el("label", {for:"ts-"+sid}, "Which kind had the most? ", sel), el("label", {for:"tt-"+sid}, "How many did you count in all? ", tot), el("div", null, chk), fb2));

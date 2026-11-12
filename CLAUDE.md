@@ -75,6 +75,7 @@ The full procedure, the only copy, is "Deploy the page" in `docs/OPERATIONS.md`.
 - An outside reviewer (Codex) and a phone audit each found real defects the other missed. Use both before shipping a new unit.
 - A passing walkthrough proves the flow, not the content. The solver reads the answer key; it never reads the steps.
 - Adults need a way to look without leaving marks. The first advice was to do real sessions and then Erase; tryout mode replaced it.
+- A task must survive the kid's own choices. The first real run of `m01` used 12 crayons, 2 of each color, so "guess which color has the most" had no answer. Wherever a kid picks the materials, ask what happens with the tidiest and the messiest pick (all equal, all different, too many kinds, only one kind) and write the step or the feedback to cover it.
 - The docs were tested by a new developer with no context writing two sessions from them; 17 gaps were found and fixed. Repeat that test after any large change to the docs.
 
 ## Backlog, in priority order
