@@ -39,228 +39,42 @@ li{margin:0 0 6px}
 <body>
 <main>
 <a class="back" href="./">Back to Data Lab</a>
-<h1>Why this curriculum</h1>
-<p class="muted">For parents. Last updated 11 November 2026.</p>
-<h2 id="summary">In two minutes</h2>
-<div class="card sum">
-<p>School math is built to reach calculus. Data and statistics get the time left over, and national scores in that strand fell between 2019 and 2022. Data Lab is a home course that runs next to school to cover it. It replaces nothing.</p>
-<p>Two kids, two tracks. A 4th grader does three sessions a week of about 10 minutes, on paper with real objects, then a short check on a screen. A 7th grader does three of about 15 minutes, mostly in CODAP, a free browser tool for exploring data. Each track opens with a prediction. Every session ends with a check that decides whether it counts. Old questions return at widening gaps. Each six-session unit ends with a quiz that includes unseen questions. Both kids collect their own data and finish with a piece of work a parent signs off.</p>
-<p>The content follows UCLA's high-school Introduction to Data Science course and the American Statistical Association's GAISE framework. The mechanics rest on two findings with strong evidence, quizzing and spaced review, and on several with weaker support: predicting first, mastery gates, concrete materials.</p>
-<p>The trial is four weeks and twelve sessions per kid. It tests whether the kids come back and finish without a parent sitting there. Nine or more sessions done mostly alone, and a kid who wants to continue: we continue. Fewer than six, or a kid who does not want to: we stop. In between, we adjust and run two more weeks.</p>
-<p>What is unproven: nearly everything specific to this course. The lessons were written days ago with AI help, and no teacher has reviewed them. We know of no normed test of data science at these ages. The quizzes show recall and some transfer. Whether these two kids will direct themselves is the question the trial exists to answer.</p>
-</div>
+<h1>About Data Lab</h1>
+<p>Data Lab is an experiment in teaching kids statistics, data literacy, and quantitative reasoning—subjects that don't get much attention in elementary and middle school math, despite being increasingly useful in everyday life.</p>
+<p>Traditional math education spends years building toward algebra and calculus. There's much less emphasis on understanding variability, interpreting graphs, evaluating evidence, or recognizing when data supports a conclusion (and when it doesn't). These are skills kids can begin developing well before they're ready for advanced math.</p>
 
-<p class="lab">On this page</p>
-<ul class="toc">
-<li><a href="#gap">The gap in standard school math</a></li>
-<li><a href="#models">What this is modelled on</a></li>
-<li><a href="#choices">The design choices and the evidence</a></li>
-<li><a href="#tools">The tools</a></li>
-<li><a href="#tracks">What each track covers</a></li>
-<li><a href="#trial">The four-week trial and the decision rule</a></li>
-<li><a href="#unproven">What is unproven and what could go wrong</a></li>
-<li><a href="#parent">What a parent does</a></li>
-<li><a href="#sources">Sources</a></li>
-<li><a href="#changes">What has changed</a></li>
-</ul>
-
-<h2 id="gap">The gap in standard school math</h2>
-<p>The standard sequence runs from arithmetic through algebra and geometry to calculus.</p>
-<p>In the <a href="https://www.thecorestandards.org/Math/">Common Core</a>, grades K–5 have a domain called Measurement &amp; Data. Statistics &amp; Probability becomes its own domain in grade 6 and runs through high school. When the standards were drafted, the American Statistical Association (ASA) <a href="https://magazine.amstat.org/blog/2010/05/13/commoncore5_10/2/">said it was</a> "concerned with the limited role" of data analysis, probability and statistics in K–5.</p>
-<p>The field's own statement of what school statistics should be is the ASA's <a href="https://www.amstat.org/education/guidelines-for-assessment-and-instruction-in-statistics-education-(gaise)-reports">GAISE II report</a> (2020, endorsed by the National Council of Teachers of Mathematics). It builds three levels, roughly elementary, middle and high school, on one four-step investigation.</p>
-<p>On NAEP, the national assessment, scores in data analysis, statistics and probability fell 10 points for 8th graders and 4 points for 4th graders from 2019 to 2022, per an <a href="https://www.k12dive.com/news/data-literacy-test-scores-decline/642780/">analysis by Data Science 4 Everyone</a>.</p>
-<p>The remedy is disputed. California's <a href="https://www.cde.ca.gov/ci/ma/cf/">2023 math framework</a> includes a chapter on data science. Drafts proposed a separate high-school data science pathway, <a href="https://edsource.org/2023/state-board-of-education-passes-new-california-math-curriculum/693990">dropped after university STEM faculty objected</a> that students in those courses would be unprepared for college STEM work. Supporters say such courses keep students in math. In 2024 a University of California faculty workgroup <a href="https://senate.universityofcalifornia.edu/_files/committees/boars/documents/boarsacwphase1report-20240221.pdf">reviewed three data science courses</a> and found that none can stand in for Algebra II. Data Lab sits next to the algebra sequence and takes no side.</p>
-
-<h2 id="models">What this is modelled on</h2>
-<div class="card">
-<h3>UCLA's Introduction to Data Science (IDS)</h3>
-<p>The starting point. <a href="https://www.idsucla.org/">IDS</a> is a year-long high-school course <a href="https://physicalsciences.ucla.edu/spotlight-statistics-program-bringing-data-science-to-high-school">built by a UCLA and Los Angeles Unified partnership</a>. Borrowed: the order of ideas, and students collecting data about their own lives. Not borrowed: the lessons, which are written for high-school classrooms, or the labs, which use <a href="https://posit.co/about/customer-stories/ucla">R and RStudio</a>. IDS is one of the three courses the UC workgroup reviewed.</p>
-</div>
-<div class="card">
-<h3>The GAISE investigation cycle</h3>
-<p>Formulate a question, collect or consider data, analyze, interpret (<a href="https://www.amstat.org/docs/default-source/amstat-documents/gaiseiiprek-12_full.pdf?v=1">GAISE II, PDF</a>). Each track's second unit is one pass through it. For the 4th grader: ask, collect, draw, tell.</p>
-</div>
-<div class="card">
-<h3>Berkeley's Data 8</h3>
-<p><a href="https://www.data8.org/">Foundations of Data Science</a>: a university course in Python with a <a href="https://inferentialthinking.com/">free online textbook</a>. Where the older track points. A plan.</p>
-</div>
-<div class="card">
-<h3>AP Statistics</h3>
-<p>The College Board's <a href="https://apcentral.collegeboard.org/courses/ap-statistics">course and exam</a>: exploring data, sampling and experimentation, probability and simulation, inference. The older track's outside yardstick, years away.</p>
-</div>
-<div class="card">
-<h3>Notice-and-wonder graph routines</h3>
-<p>The 4th grader's "mystery graph" appears in three stages, and the kid says what they notice. The format follows <a href="https://slowrevealgraphs.com/">Slow Reveal Graphs</a>, the ASA and New York Times feature <a href="https://www.amstat.org/what-s-going-on-in-this-graph">What's Going On in This Graph?</a> and Youcubed's <a href="https://www.youcubed.org/resource/data-talks/">data talks</a>. The graphs are our own.</p>
-</div>
-
-<h2 id="choices">The design choices and the evidence</h2>
-<p>The strength labels are ours. Those for quizzing, spacing and concrete materials follow the U.S. Institute of Education Sciences <a href="https://ies.ed.gov/ncee/wwc/PracticeGuide/1">practice guide</a> (2007).</p>
-
-<div class="card">
-<h3>Predict, then test, before any explanation</h3>
-<p>Session one is a guess, then a measurement: which hand is faster, which color is most common in a blind handful.</p>
-<p><span class="tag">Evidence: thin to moderate</span><br>The practice guide rates pre-questions "minimal". A <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8642250">2021 review</a> finds predicting beats restudying for simple facts when feedback is immediate. It does not cover conceptual change.</p>
-</div>
-
-<div class="card">
-<h3>A check every session, and spaced review</h3>
-<p>One to three questions close each session. They return as warm-ups after 1, 3, 7, 14 and 30 days. A miss resets to 1 day.</p>
-<p><span class="tag">Evidence: strong (quizzing), moderate (spacing)</span><br><a href="https://www.psychologicalscience.org/news/releases/which-study-strategies-make-the-grade.html">Dunlosky et al. (2013)</a> rated these two highest of ten study techniques, across ages. Our exact intervals are a convention.</p>
-</div>
-
-<div class="card">
-<h3>Mastery gates before moving on</h3>
-<p>After six sessions: a 10-question quiz, 9 to pass, five or six questions unseen, unlimited retakes.</p>
-<p><span class="tag">Evidence: moderate</span><br>Bloom's 1984 paper is titled <a href="https://eric.ed.gov/?id=EJ303699">"The 2 Sigma Problem"</a>. A <a href="https://eric.ed.gov/?id=EJ415887">1990 meta-analysis</a> of 108 evaluations found an <a href="https://scispace.com/pdf/effectiveness-of-mastery-learning-programs-a-meta-analysis-45bgwh1byb.pdf">average gain of 0.52 standard deviations</a>, from upper elementary to college. Those were taught programs. Ours is a quiz.</p>
-</div>
-
-<div class="card">
-<h3>The kids' own data</h3>
-<p>Counts of things at home, a week of sleep, screen time and activity, reaction times.</p>
-<p><span class="tag">Evidence: thin</span><br>GAISE II recommends questions "of interest to students". That is guidance, not a trial. That it keeps kids coming back is our inference.</p>
-</div>
-
-<div class="card">
-<h3>Short sessions and a weekly target</h3>
-<p>8–12 minutes for the 4th grader, 10–20 for the 7th grader, three a week.</p>
-<p><span class="tag">Evidence: none cited</span><br>A practical choice: this sits on top of school. Nothing cited here says 10 minutes is the right size.</p>
-</div>
-
-<div class="card">
-<h3>Paper and real objects first for the 4th grader</h3>
-<p>Each mission is a printed card: sort, tally, draw, measure. The screen is for the check.</p>
-<p><span class="tag">Evidence: mixed</span><br>The practice guide rates linking concrete and abstract "moderate". A <a href="https://asu.elsevierpure.com/en/publications/a-meta-analysis-of-the-efficacy-of-teaching-mathematics-with-conc/">meta-analysis of 55 studies</a>, kindergarten to college, found small to moderate gains from manipulatives, larger for retention than for transfer.</p>
-</div>
-
-<div class="card">
-<h3>Self-pacing with test-out</h3>
-<p>A kid can do more than three a week, or take a unit quiz early and skip the unit. Skipped sessions never count as done.</p>
-<p><span class="tag">Evidence: thin, partly negative</span><br>The 1990 meta-analysis found self-paced mastery programs often lowered completion in college classes. We have nothing to cite at these ages. The trial tests it.</p>
-</div>
-
-<div class="card">
-<h3>A limited role for the parent</h3>
-<p>Set up once, ten minutes a week, sign off projects. No sitting in.</p>
-<p><span class="tag">Evidence: none cited</span><br>A household constraint and a hypothesis.</p>
-</div>
-
-<div class="card">
-<h3>Left out on purpose</h3>
+<h2>What it is</h2>
+<p>Data Lab is a supplemental curriculum for two kids in 4th and 7th grade, designed around three short sessions per week, each lasting about 10–15 minutes.</p>
+<p>The two tracks cover similar ideas at different levels:</p>
 <ul>
-<li><span class="lab">Points, badges, leaderboards, pay per session.</span> Our judgment: they teach working for the payout.</li>
-<li><span class="lab">An AI tutor.</span> The page the kids use has no AI in it. A tutor that hands over answers trains kids to ask for them.</li>
-<li><span class="lab">Daily streak pressure.</span> The plan is three a week.</li>
+<li><b>4th grade:</b> Hands-on activities using everyday objects, simple measurements, graphs, and comparisons. The emphasis is on developing intuition about data before introducing much formal terminology.</li>
+<li><b>7th grade:</b> More independent exploration of real datasets, using <a href="https://codap.concord.org/">CODAP</a>, a free tool for visualizing and analyzing data. Activities introduce concepts like distributions, variability, sampling, and relationships between variables.</li>
 </ul>
-</div>
+<p>Lessons generally start with a question or prediction, followed by an activity using data, and end with a short explanation of what the results mean. The goal is to develop habits of thinking rather than memorizing statistical procedures.</p>
 
-<h2 id="tools">The tools</h2>
-<div class="card">
-<h3>CODAP</h3>
-<p><a href="https://codap.concord.org/">CODAP</a> is a data exploration tool from the Concord Consortium. It is free, open source, runs in a browser, <a href="https://codap.concord.org/about/">needs no account</a> and is designed for grades 5–14.</p>
-<p>It shows a table. Drag a column name onto an axis and a graph appears, one dot per row. Click a dot and the same row lights up in the table and in every other graph. The 7th grader starts with a built-in table of 27 mammals.</p>
-<p>It needs a computer with a mouse or trackpad. The 4th grader does not use it in the trial.</p>
-</div>
-<div class="card">
-<h3>The Data Lab page</h3>
-<p>It shows the steps, runs the check, schedules review, graphs the kid's own counts and shows a parent the numbers. It cannot send reminders, see a notebook or a CODAP window, or grade written answers.</p>
-</div>
-<div class="card">
-<h3>Paper</h3>
-<p>A notebook each. Printed mission cards for the 4th grader.</p>
-</div>
-<div class="card">
-<h3>Later, if this continues</h3>
-<p><span class="tag">Plans, not built</span><br>Python notebooks through the free <a href="https://www.kaggle.com/learn">Kaggle Learn</a> courses for the older track. <a href="https://www.khanacademy.org/">Khan Academy</a> unit tests as an outside check.</p>
-</div>
-
-<h2 id="tracks">What each track covers in the trial</h2>
-<div class="card">
-<h3>4th-grade track</h3>
+<h2>How it's designed</h2>
+<p>The curriculum draws on several existing approaches to teaching statistics, particularly the American Statistical Association's GAISE framework and UCLA's Introduction to Data Science curriculum.</p>
+<p>A few principles guide the design:</p>
 <ul>
-<li>Guess first, then count.</li>
-<li>Read bar graphs, picture graphs with a key, and dot plots.</li>
-<li>Tally in fives. Draw a bar graph by hand with a title, labels and a scale from 0.</li>
-<li>Tell which questions need data.</li>
-<li>Find the middle, the most common and the range.</li>
+<li><b>Start with questions, not formulas.</b> Statistics is more interesting when there's something worth figuring out.</li>
+<li><b>Use real or tangible data.</b> Measuring, collecting, and exploring data helps connect abstract ideas to the world.</li>
+<li><b>Revisit concepts over time.</b> Short, repeated encounters with an idea are generally more useful than covering it once and moving on.</li>
+<li><b>Keep sessions short.</b> The activities should fit into ordinary family life without becoming another substantial homework obligation.</li>
+<li><b>Encourage independent work.</b> Ideally, kids can complete most sessions on their own, with occasional help or discussion from a parent.</li>
 </ul>
-<p><span class="lab">At the end:</span> a hand-drawn bar graph answering a question the kid picked, with three sentences: I asked, I found, I wonder.</p>
-</div>
-<div class="card">
-<h3>7th-grade track</h3>
-<ul>
-<li>One dot is one case.</li>
-<li>Categorical and numeric data. What makes a question statistical.</li>
-<li>Compare groups by where most of the dots sit.</li>
-<li>Shape, median and mean, range and interquartile range.</li>
-<li>Outliers, and which summary to trust.</li>
-</ul>
-<p><span class="lab">At the end:</span> a one-page data story about the kid's own data: question, collection, graph, finding, limit.</p>
-</div>
+<p>The lessons are structured to provide some guidance without turning every activity into a series of instructions to follow mechanically.</p>
 
-<h2 id="trial">The four-week trial and the decision rule</h2>
-<p>The first question is whether they come back and finish without a parent sitting there. What they learned comes second. Twelve sessions each, then a decision made with the kids.</p>
-<div class="card">
-<h3>Continue</h3>
-<p>9 or more of 12 sessions done, mostly alone, and the kid wants to continue. The next unit gets written.</p>
-</div>
-<div class="card">
-<h3>Adjust</h3>
-<p>6 to 8 sessions, or 9 or more only with a parent alongside. Change the time slot or shorten the sessions. Run two more weeks.</p>
-</div>
-<div class="card">
-<h3>Stop</h3>
-<p>Fewer than 6, or the kid does not want to. No make-up work.</p>
-</div>
-
-<h2 id="unproven">What is unproven and what could go wrong</h2>
-<ul>
-<li><span class="lab">The content is unpiloted.</span> It was written days ago with AI assistance and reviewed by a second AI system and by the parents. The kids are finding the mistakes.</li>
-<li><span class="lab">Novelty fades,</span> usually in week two or three. The page sends no reminders.</li>
-<li><span class="lab">No normed measure.</span> We know of no test that says where a kid stands in data science at these ages.</li>
-<li><span class="lab">The quizzes are small.</span> Ten questions show recall and some transfer, not mastery.</li>
-<li><span class="lab">It depends on a weekly parent check.</span> If that lapses, nobody reads the written answers.</li>
-<li><span class="lab">"Self-directed" is the premise under test.</span> None of the sources above is a study of kids these ages working alone at home.</li>
-<li><span class="lab">One borrowed idea has no independent support.</span> Short mastery-based sessions follow <a href="https://alpha.school/">Alpha School's</a> description of its model. Its published results are its own claims.</li>
-</ul>
-
-<h2 id="parent">What a parent does</h2>
-<ul>
-<li>Agree a regular slot with each kid.</li>
-<li>Once a week, open Parent view: check sessions done, read one written answer, sign off any waiting project.</li>
-<li>To see what the kids see, use "Grown-ups: try the lessons" on the home screen. Nothing is saved.</li>
-<li>Stay out of sessions. Leave their conclusions alone and ask how they know.</li>
-</ul>
-
-<h2 id="sources">Sources</h2>
-<ul class="src">
-<li>Common Core State Standards, Mathematics: <a href="https://www.thecorestandards.org/Math/">thecorestandards.org/Math</a></li>
-<li>ASA review of the draft Common Core, Amstat News, 2010: <a href="https://magazine.amstat.org/blog/2010/05/13/commoncore5_10/2/">magazine.amstat.org/blog/2010/05/13/commoncore5_10/2</a></li>
-<li>ASA, GAISE reports: <a href="https://www.amstat.org/education/guidelines-for-assessment-and-instruction-in-statistics-education-(gaise)-reports">amstat.org GAISE page</a>; Pre-K–12 GAISE II, 2020: <a href="https://www.amstat.org/docs/default-source/amstat-documents/gaiseiiprek-12_full.pdf?v=1">full PDF</a></li>
-<li>K-12 Dive on the Data Science 4 Everyone NAEP analysis, 2023: <a href="https://www.k12dive.com/news/data-literacy-test-scores-decline/642780/">k12dive.com/news/data-literacy-test-scores-decline/642780</a></li>
-<li>California Department of Education, Mathematics Framework, adopted July 2023: <a href="https://www.cde.ca.gov/ci/ma/cf/">cde.ca.gov/ci/ma/cf</a></li>
-<li>EdSource on the framework's adoption, 2023: <a href="https://edsource.org/2023/state-board-of-education-passes-new-california-math-curriculum/693990">edsource.org/2023/state-board-of-education-passes-new-california-math-curriculum/693990</a></li>
-<li>University of California Academic Senate, Area C workgroup stage 1 report, 2024: <a href="https://senate.universityofcalifornia.edu/_files/committees/boars/documents/boarsacwphase1report-20240221.pdf">senate.universityofcalifornia.edu (PDF)</a></li>
-<li>Introduction to Data Science: <a href="https://www.idsucla.org/">idsucla.org</a>; its history: <a href="https://physicalsciences.ucla.edu/spotlight-statistics-program-bringing-data-science-to-high-school">physicalsciences.ucla.edu</a>; its software: <a href="https://posit.co/about/customer-stories/ucla">posit.co/about/customer-stories/ucla</a></li>
-<li>Data 8: <a href="https://www.data8.org/">data8.org</a>; textbook: <a href="https://inferentialthinking.com/">inferentialthinking.com</a></li>
-<li>College Board, AP Statistics: <a href="https://apcentral.collegeboard.org/courses/ap-statistics">apcentral.collegeboard.org/courses/ap-statistics</a></li>
-<li>Slow Reveal Graphs: <a href="https://slowrevealgraphs.com/">slowrevealgraphs.com</a></li>
-<li>ASA, What's Going On in This Graph?: <a href="https://www.amstat.org/what-s-going-on-in-this-graph">amstat.org/what-s-going-on-in-this-graph</a></li>
-<li>Youcubed, data talks: <a href="https://www.youcubed.org/resource/data-talks/">youcubed.org/resource/data-talks</a></li>
-<li>Institute of Education Sciences, Organizing Instruction and Study to Improve Student Learning, 2007: <a href="https://ies.ed.gov/ncee/wwc/PracticeGuide/1">ies.ed.gov/ncee/wwc/PracticeGuide/1</a></li>
-<li>Dunlosky, Rawson, Marsh, Nathan and Willingham, Psychological Science in the Public Interest, 2013. The publisher's summary: <a href="https://www.psychologicalscience.org/news/releases/which-study-strategies-make-the-grade.html">psychologicalscience.org</a></li>
-<li>Brod, Predicting as a learning strategy, Psychonomic Bulletin &amp; Review, 2021: <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC8642250">pmc.ncbi.nlm.nih.gov/articles/PMC8642250</a></li>
-<li>Bloom, The 2 Sigma Problem, Educational Researcher, 1984: <a href="https://eric.ed.gov/?id=EJ303699">eric.ed.gov/?id=EJ303699</a></li>
-<li>Kulik, Kulik and Bangert-Drowns, Effectiveness of Mastery Learning Programs, Review of Educational Research, 1990: <a href="https://eric.ed.gov/?id=EJ415887">eric.ed.gov/?id=EJ415887</a>; full text: <a href="https://scispace.com/pdf/effectiveness-of-mastery-learning-programs-a-meta-analysis-45bgwh1byb.pdf">scispace.com (PDF)</a></li>
-<li>Carbonneau, Marley and Selig, Journal of Educational Psychology, 2013: <a href="https://asu.elsevierpure.com/en/publications/a-meta-analysis-of-the-efficacy-of-teaching-mathematics-with-conc/">asu.elsevierpure.com</a></li>
-<li>CODAP: <a href="https://codap.concord.org/">codap.concord.org</a>; about: <a href="https://codap.concord.org/about/">codap.concord.org/about</a></li>
-<li>Kaggle Learn: <a href="https://www.kaggle.com/learn">kaggle.com/learn</a>; Khan Academy: <a href="https://www.khanacademy.org/">khanacademy.org</a></li>
-<li>Alpha School: <a href="https://alpha.school/">alpha.school</a></li>
-</ul>
+<h2>An experiment, not a finished curriculum</h2>
+<p>Data Lab was developed with substantial assistance from AI, including curriculum planning, lesson writing, and software development. The underlying educational ideas come from established work in statistics education and learning science, but this particular implementation hasn't been validated.</p>
+<p>There are plenty of open questions. Are the activities engaging enough to sustain interest? Can kids work through them independently? Is 10–15 minutes enough to make meaningful progress? Does what they learn carry over to interpreting data outside the lessons?</p>
+<p>The initial plan is to try four weeks, see what works, and adjust. Success would mean the kids develop some useful intuitions about data, become more comfortable asking quantitative questions, and don't come to dread the sessions.</p>
+<p>It's a small, practical attempt to give statistics and data literacy a place in childhood education alongside traditional math.</p>
 
 <h2 id="changes">What has changed</h2>
 <div class="log">
 <h3>11 November 2026</h3>
 <ul>
+<li>Replaced the long overview on this page with a shorter one.</li>
 <li>Mission 1 of the younger track now asks for a blind handful. Before, a kid could hand-pick the items and know the answer before guessing. If the piles tie, the page says so.</li>
 <li>Added this page, then rewrote it with a two-minute summary, what the course is modelled on, the evidence behind each design choice, and the tools explained.</li>
 </ul>
